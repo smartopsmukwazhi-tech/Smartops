@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartOps · Workspace Navigator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    /* ----- enterprise design tokens ----- */
+    :root {
+      color-scheme: light;
+      --ink: #121f1a;
+      --ink-soft: #263a32;
+      --muted: #5e6f67;
+      --paper: #f6f9f7;
+      --line: #dde6e0;
+      --forest: #0b1a14;
+      --forest-light: #1b3a2f;
+      --lime: #c1f07a;
+      --coral: #ee7b58;
+      --white: #ffffff;
+      --radius-card: 8px;
+      --radius-sm: 6px;
+      --shadow-sm: 0 2px 8px rgba(0, 20, 12, 0.04);
+      --shadow-hover: 0 16px 32px -8px rgba(0, 20, 12, 0.12);
+      --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-serif: "Georgia", "Times New Roman", serif;
+      --transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ----- topbar (consistent with main app) ----- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      padding: 0 clamp(20px, 4vw, 48px);
+      background: var(--white);
+      border-bottom: 1px solid var(--line);
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--forest);
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px 10px 10px 4px;
+      background: var(--forest);
+      color: var(--lime);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .primary-nav {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .primary-nav a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      letter-spacing: -0.01em;
+      transition: var(--transition);
+      border-bottom: 2px solid transparent;
+      padding: 6px 2px;
+    }
+
+    .primary-nav a:hover,
+    .primary-nav a:focus-visible {
+      color: #0e6b4c;
+      border-bottom-color: #0e6b4c;
+      outline: none;
+    }
+
+    .primary-nav a.active {
+      color: #0e6b4c;
+      border-bottom-color: #0e6b4c;
+    }
+
+    .primary-nav form { margin: 0; }
+
+    .primary-nav button {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--white);
+      color: var(--ink-soft);
+      padding: 6px 10px;
+      font: 600 12px var(--font-sans);
+      cursor: pointer;
+    }
+
+    .primary-nav button:hover,
+    .primary-nav button:focus-visible {
+      border-color: #17855c;
+      color: #17855c;
+      outline: none;
+    }
+
+    /* ----- main navigator content ----- */
+    .navigator {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px clamp(20px, 4vw, 48px) 64px;
+    }
+
+    .nav-container {
+      width: 100%;
+      max-width: 880px;
+    }
+
+    .nav-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .nav-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #17855c;
+      display: inline-block;
+      border-bottom: 1px solid rgba(23, 133, 92, 0.25);
+      padding-bottom: 6px;
+      margin-bottom: 16px;
+    }
+
+    .nav-header h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--forest);
+      margin: 0 0 10px 0;
+    }
+
+    .nav-header h1 em {
+      font-style: italic;
+      color: #17855c;
+      font-weight: 400;
+    }
+
+    .nav-header p {
+      font-size: 14px;
+      color: var(--muted);
+      max-width: 420px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ----- app grid ----- */
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .app-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 24px 22px 20px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-top: 3px solid #17855c;
+      border-radius: 0 0 var(--radius-card) var(--radius-card);
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      position: relative;
+      min-height: 190px;
+    }
+
+    .app-card.ramp {
+      border-top-color: var(--coral);
+    }
+
+    .app-card.roster {
+      border-top-color: #6d28d9;
+    }
+
+    .app-card:hover,
+    .app-card:focus-visible {
+      transform: translateY(-4px);
+      border-color: #b2c9bc;
+      box-shadow: var(--shadow-hover);
+      outline: none;
+    }
+
+    .app-card:focus-visible {
+      outline: 2px solid #17855c;
+      outline-offset: 2px;
+    }
+
+    .app-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .app-index {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #17855c;
+    }
+
+    .ramp .app-index { color: #c25132; }
+    .roster .app-index { color: #6d28d9; }
+
+    .app-arrow {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #e9f3ee;
+      color: #0e6b4c;
+      font-size: 15px;
+      transition: var(--transition);
+    }
+
+    .ramp .app-arrow { background: #fff0ea; color: #b84a2e; }
+    .roster .app-arrow { background: #f3e8ff; color: #6d28d9; }
+
+    .app-card:hover .app-arrow {
+      background: #17855c;
+      color: #fff;
+      transform: scale(1.05);
+    }
+
+    .ramp:hover .app-arrow { background: var(--coral); color: #fff; }
+    .roster:hover .app-arrow { background: #6d28d9; color: #fff; }
+
+    .app-card h2 {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+      color: var(--forest);
+      margin: 0 0 8px 0;
+    }
+
+    .app-card p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      margin: 0 0 18px 0;
+      max-width: 240px;
+    }
+
+    .app-action {
+      margin-top: auto;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0, 0, 0, 0.04);
+      width: 100%;
+      transition: var(--transition);
+    }
+
+    .app-action span {
+      color: #17855c;
+      font-size: 15px;
+      line-height: 1;
+      transition: var(--transition);
+    }
+
+    .ramp .app-action span { color: var(--coral); }
+    .roster .app-action span { color: #6d28d9; }
+
+    .app-card:hover .app-action span {
+      transform: translateX(4px);
+    }
+
+    /* ----- footer ----- */
+    .footer {
+      border-top: 1px solid var(--line);
+      padding: 18px 0;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--white);
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* ----- responsive ----- */
+    @media (max-width: 720px) {
+      .app-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .app-card {
+        min-height: 160px;
+        padding: 20px;
+      }
+
+      .app-card p { max-width: 100%; }
+
+      .nav-header { margin-bottom: 28px; }
+
+      .navigator {
+        padding: 32px 16px 48px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- topbar -->
+  <header class="topbar">
+    <a class="brand" href="{% url 'index' %}" aria-label="SmartOps home">
+      <span class="brand-mark" aria-hidden="true">SO</span>
+      <span>SmartOps</span>
+    </a>
+    <nav class="primary-nav" aria-label="Primary navigation">
+      <a href="{% url 'checkin_analyser' %}">Check-in</a>
+      <a href="{% url 'ramp_analyser' %}">Ramp</a>
+      <a href="{% url 'checkin_sla' %}">SLA</a>
+      {% if user.is_authenticated %}
+        <span>{{ user.get_username }}</span>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}?next={{ request.path|urlencode }}">Sign in</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <!-- navigator -->
+  <main class="navigator">
+    <div class="nav-container">
+      <div class="nav-header">
+        <span class="nav-eyebrow">Flight operations · workspace navigator</span>
+        <h1>Choose your <em>workspace.</em></h1>
+        <p>Select an analyser below to open its dedicated workspace and start your shift.</p>
+      </div>
+
+      <div class="app-grid">
+        <!-- Check-in analyser -->
+        <a class="app-card" href="{% url 'checkin_analyser' %}">
+          <div class="app-card-top">
+            <span class="app-index">01 / Check-in</span>
+            <span class="app-arrow" aria-hidden="true">↗</span>
+          </div>
+          <h2>Check-in analyser</h2>
+          <p>Review check-in staffing and flight staff hours in a focused workspace.</p>
+          <span class="app-action">Open analyser <span aria-hidden="true">→</span></span>
+        </a>
+
+        <!-- Ramp analyser -->
+        <a class="app-card ramp" href="{% url 'ramp_analyser' %}">
+          <div class="app-card-top">
+            <span class="app-index">02 / Ramp</span>
+            <span class="app-arrow" aria-hidden="true">↗</span>
+          </div>
+          <h2>Ramp analyser</h2>
+          <p>Open the ramp workspace for flight and employee summaries.</p>
+          <span class="app-action">Open analyser <span aria-hidden="true">→</span></span>
+        </a>
+
+        <!-- Check-in SLA configuration -->
+        <a class="app-card roster" href="{% url 'checkin_sla' %}">
+          <div class="app-card-top">
+            <span class="app-index">03 / SLA</span>
+            <span class="app-arrow" aria-hidden="true">↗</span>
+          </div>
+          <h2>Check-in SLA</h2>
+          <p>Manage minimum check-in agent requirements by airline and aircraft type.</p>
+          <span class="app-action">Manage SLA <span aria-hidden="true">→</span></span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- footer -->
+  <footer class="footer">
+    <span>SmartOps · Enterprise Flight Operations · v2.4</span>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flight Staff Hours Analyser</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+  :root{ --line:#e2e8f0; --bg:#f1f5f9; --ink:#0f172a; --muted:#64748b; }
+  body{background:var(--bg);color:#1e293b;
+    font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;font-size:13.5px;}
+  .app-header{background:linear-gradient(100deg,#0f172a 0%,#1e3a8a 55%,#1d4ed8 100%);
+    color:#fff;padding:12px 0;box-shadow:0 2px 10px rgba(15,23,42,.18);}
+  .app-header h1{font-size:15px;letter-spacing:.2px}
+  .brand-logo{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.14);
+    display:grid;place-items:center;font-size:16px;}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 1px 2px rgba(15,23,42,.04);}
+  .panel-head{padding:10px 14px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .panel-title{font-size:12px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:#334155;margin:0;}
+  .drop-zone{border:1.5px dashed #cbd5e1;border-radius:10px;background:#f8fafc;
+    padding:18px 14px;text-align:center;cursor:pointer;transition:.15s ease;}
+  .drop-zone:hover,.drop-zone.drag{border-color:#1d4ed8;background:#eff6ff;}
+  .drop-zone i{font-size:22px;color:#1d4ed8;display:block;margin-bottom:4px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:11px;
+    padding:10px 13px;display:flex;align-items:center;gap:11px;height:100%;}
+  .kpi .ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:15px;flex:0 0 auto;}
+  .kpi .val{font-size:19px;font-weight:700;line-height:1.15;color:var(--ink)}
+  .kpi .lbl{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  .kpi-alert{border-color:#fca5a5;background:#fff5f5}
+  .ico-blue{background:#e0edff;color:#1d4ed8}
+  .ico-teal{background:#ccfbf1;color:#0f766e}
+  .ico-indigo{background:#e0e7ff;color:#4338ca}
+  .ico-red{background:#fee2e2;color:#b91c1c}
+  .table{font-size:13px;margin-bottom:0}
+  .table thead th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:#475569;font-weight:700;white-space:nowrap;border-bottom:1px solid var(--line);}
+  .table tbody td{vertical-align:middle}
+  .staff-row{cursor:pointer}
+  .staff-row:hover{background:#f8fafc}
+  .detail-row>td{background:#f8fafc;padding:0}
+  .detail-wrap{padding:10px 14px 12px 46px}
+  .detail-wrap .table{font-size:12px}
+  .detail-section-title{font-size:10.5px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:#475569;margin:6px 0 4px;}
+  .count-pill{display:inline-block;min-width:34px;padding:3px 10px;border-radius:20px;
+    background:#e0e7ff;color:#4338ca;font-weight:400;font-size:13.5px;}
+  .count-pill-zero{background:#f1f5f9;color:#94a3b8}
+  .badge-soft-ok{background:#dcfce7;color:#15803d;font-weight:600}
+  .badge-soft-warn{background:#fef3c7;color:#92400e;font-weight:600}
+  .badge-soft-danger{background:#fee2e2;color:#b91c1c;font-weight:600}
+  .badge-soft-info{background:#e0f2fe;color:#0369a1;font-weight:600}
+  .badge-soft-muted{background:#e2e8f0;color:#475569;font-weight:600}
+  .badge-soft-leader{background:#ede9fe;color:#6d28d9;font-weight:600}
+  .badge{font-size:10.5px;padding:.34em .6em;border-radius:5px;letter-spacing:.02em}
+  .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .empty-note{color:var(--muted);font-size:12.5px}
+  .chev{transition:transform .15s ease;color:#94a3b8}
+  .staff-row.open .chev{transform:rotate(90deg)}
+  .note-bar{font-size:11.5px;color:var(--muted);
+    border-top:1px solid var(--line);padding:8px 14px;}
+  .flt-badge{display:inline-block;padding:1px 6px;border-radius:5px;font-size:10.5px;
+    font-weight:700;letter-spacing:.02em;margin:1px 3px 1px 0;line-height:1.55;
+    border:1px solid transparent;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .flt-worked{background:#e0edff;color:#1d4ed8;border-color:#bfdbfe}
+  .legend{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--muted);flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:4px}
+  th.col-count{background:#eef2ff!important;color:#4338ca!important}
+  td.col-count{background:#fafaff}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="container-fluid px-3 px-lg-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <div class="brand-logo"><i class="bi bi-airplane-engines"></i></div>
+      <div>
+        <h1 class="mb-0 fw-semibold">Ramp Roster</h1>
+        <div class="text-white-50" style="font-size:11.5px">
+          Duty hours &amp; flight assignment report &middot; Start Time &rarr; End Time
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <button id="btnSample" class="btn btn-sm btn-light fw-semibold">
+        <i class="bi bi-table me-1"></i>Load sample
+      </button>
+      <button id="btnExport" class="btn btn-sm btn-outline-light fw-semibold" disabled>
+        <i class="bi bi-filetype-csv me-1"></i>CSV
+      </button>
+      <button id="btnPdf" class="btn btn-sm btn-outline-light fw-semibold" disabled>
+        <i class="bi bi-filetype-pdf me-1"></i>PDF report
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="container-fluid px-3 px-lg-4 py-3">
+
+  <div class="panel mb-3">
+    <div class="panel-head">
+      <h2 class="panel-title"><i class="bi bi-upload me-1"></i>Data source</h2>
+      <span class="badge badge-soft-muted">CSV &middot; XLSX &middot; XLS</span>
+    </div>
+    <div class="p-3">
+      <div id="dropZone" class="drop-zone">
+        <i class="bi bi-cloud-arrow-up"></i>
+        <div><strong>Drop</strong> your roster here, or <span class="text-primary fw-semibold">browse</span></div>
+        <div class="text-muted mt-1" style="font-size:11.5px">
+          Required: <code>Area / Flight</code> &middot; <code>Start Time</code> &middot; <code>End Time</code>
+          &middot; <code>Role</code> &middot; <code>Employee Name</code>
+        </div>
+        <input type="file" id="fileInput" accept=".csv,.txt,.xlsx,.xls" hidden>
+      </div>
+      <div id="fileInfo" class="mt-2 d-none"></div>
+      <div id="alertBox"></div>
+    </div>
+  </div>
+
+  <div class="row row-cols-2 row-cols-lg-4 g-2 g-lg-3 mb-3">
+    <div class="col"><div class="kpi"><div class="ico ico-blue"><i class="bi bi-airplane"></i></div>
+      <div><div class="val mono" id="kpiFlights">0</div><div class="lbl">Flights analysed</div></div></div></div>
+    <div class="col"><div class="kpi"><div class="ico ico-indigo"><i class="bi bi-people"></i></div>
+      <div><div class="val mono" id="kpiStaff">0</div><div class="lbl">Employees<span id="kpiLeader" class="ms-1 text-lowercase"></span></div></div></div></div>
+    <div class="col"><div class="kpi"><div class="ico ico-teal"><i class="bi bi-clock-history"></i></div>
+      <div><div class="val mono" id="kpiHours">0.0</div><div class="lbl" id="kpiHoursSub">Total man-hours</div></div></div></div>
+    <div class="col"><div class="kpi" id="kpiOverCard"><div class="ico ico-red"><i class="bi bi-exclamation-triangle"></i></div>
+      <div><div class="val mono" id="kpiOver">0</div><div class="lbl">Over 10 hours</div></div></div></div>
+  </div>
+
+  <div class="panel mb-3" id="flightRoster">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title"><i class="bi bi-people me-1"></i>Ramp Roster</h2>
+        <div class="text-muted mt-1" style="font-size:11.5px">Employees assigned to the selected flight</div>
+      </div>
+      <button id="flightRosterToggle" class="btn btn-sm btn-outline-secondary" type="button"
+              aria-expanded="true" aria-controls="flightRosterContent">
+        <i class="bi bi-chevron-up me-1" aria-hidden="true"></i><span>Collapse</span>
+      </button>
+    </div>
+    <div id="flightRosterContent">
+      <div class="d-flex align-items-end justify-content-end gap-2 flex-wrap p-3 pb-0">
+        <div>
+          <label for="flightSelect" class="form-label mb-1 small fw-semibold">Flight</label>
+          <select id="flightSelect" class="form-select form-select-sm" style="min-width:170px" disabled>
+            <option value="">Load a roster first</option>
+          </select>
+        </div>
+        <div>
+          <label for="flightEmployeeSearch" class="form-label mb-1 small fw-semibold">Find employee</label>
+          <input id="flightEmployeeSearch" type="search" class="form-control form-control-sm"
+                 placeholder="Search name or role" style="min-width:190px" disabled>
+        </div>
+      </div>
+      <div class="row g-2 p-3 pb-2">
+        <div class="col-6 col-md-3"><div class="kpi"><div class="ico ico-blue"><i class="bi bi-airplane"></i></div>
+          <div><div class="val mono" id="rosterFlight">—</div><div class="lbl">Selected flight</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="kpi"><div class="ico ico-indigo"><i class="bi bi-person-check"></i></div>
+          <div><div class="val mono" id="rosterEmployees">0</div><div class="lbl">Employees on flight</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="kpi"><div class="ico ico-teal"><i class="bi bi-star"></i></div>
+          <div><div class="val mono" id="rosterLeaders">0</div><div class="lbl">Team leaders</div></div></div></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light"><tr>
+            <th style="width:48px">#</th>
+            <th>Employee</th>
+            <th>Role</th>
+            <th class="text-nowrap">Start</th>
+            <th class="text-nowrap">End</th>
+            <th class="text-nowrap">Duration</th>
+          </tr></thead>
+          <tbody id="flightRosterBody">
+            <tr><td colspan="6" class="text-center text-muted py-4">Upload a roster or load sample data to view employees by flight.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel mb-3">
+    <div class="panel-head">
+      <h2 class="panel-title"><i class="bi bi-shield-check me-1"></i>Shift verification &mdash; &gt; 10 hours</h2>
+      <span class="badge badge-soft-info">Standard shift: 10 h 00 m</span>
+    </div>
+    <div id="verifyBody" class="p-3"><div class="empty-note">Upload a file to run the 10-hour shift verification.</div></div>
+  </div>
+
+  <div class="panel mb-3">
+    <div class="panel-head">
+      <h2 class="panel-title"><i class="bi bi-list-check me-1"></i>Staff summary &mdash; Employee &middot; Flights Worked &middot; Total Time Worked (descending by flights)</h2>
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="legend">
+          <span><span class="flt-badge flt-worked">FLT</span> worked</span>
+          <span><span class="badge badge-soft-leader"><i class="bi bi-star me-1"></i>Team Leader</span></span>
+        </div>
+        <div class="input-group input-group-sm" style="width:230px">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input id="searchInput" type="search" class="form-control border-start-0 ps-0"
+                 placeholder="Search staff or flight…" disabled>
+        </div>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:42px">#</th>
+            <th>Employee Name</th>
+            <th style="min-width:220px">Flights worked</th>
+            <th class="text-center col-count" style="width:130px">Total flights</th>
+            <th class="text-end" style="width:150px">Total time worked</th>
+            <th style="width:200px">Status</th>
+          </tr>
+        </thead>
+        <tbody id="staffBody">
+          <tr><td colspan="6" class="text-center text-muted py-4">No data loaded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-bar">
+      Source columns: <code>Area / Flight</code> &middot; <code>Start Time</code> &middot; <code>End Time</code>
+      &middot; <code>Role</code> &middot; <code>Employee Name</code>. &nbsp;
+      <strong>Team Leader</strong> = role contains <em>team leader / leader / TL</em>. &nbsp;
+      <strong>Total time worked</strong> = Σ (End − Start), overnight rolls over midnight. &nbsp;
+      Each flight counted once per employee. Sorted by total flights descending, then total time descending.
+      Shifts &gt; 10 h flagged for verification.
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* =====================================================================
+   CONFIG
+   ===================================================================== */
+const SHIFT_LIMIT_MIN = 10 * 60;
+const TEAM_LEADER_RE  = /\b(team\s*leader|teamleader|leader|tl)\b/i;
+
+const COLMAP = {
+  flight  : ['areaflight','flight','flightno','flightnumber','flt','fltno','area'],
+  start   : ['starttime','start','chknopen','checkinopen','open','timein'],
+  end     : ['endtime','end','chkclose','checkinclose','close','timeout'],
+  role    : ['role','position','duty','designation','jobrole'],
+  employee: ['employeename','employee','staffassigned','staff','name','agent','assigned']
+};
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+const state = { staff: [], flightCount: 0, duplicates: 0, sourceName: '' };
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+const norm = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const esc  = s => String(s ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function fmtHM(min){
+  if (min === null || min === undefined || isNaN(min)) return '—';
+  const neg = min < 0;
+  let m = Math.abs(Math.round(min));
+  const h = Math.floor(m / 60), r = m % 60;
+  return (neg ? '-' : '') + h + 'h ' + String(r).padStart(2, '0') + 'm';
+}
+function fmtTotalTime(min){
+  if (min === null || min === undefined || isNaN(min)) return '—';
+  const m = Math.max(0, Math.round(min));
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
+function minToHHMM(m){
+  if (m === null || m === undefined || isNaN(m)) return '';
+  m = ((Math.round(m) % 1440) + 1440) % 1440;
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
+function displayTime(min, raw){
+  if (min !== null && min !== undefined && !isNaN(min)) return minToHHMM(min);
+  const s = String(raw ?? '').trim();
+  return s || '—';
+}
+function parseTimeToMin(v){
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'number' && isFinite(v)){
+    if (v >= 0 && v < 1)  return Math.round(v * 1440);
+    if (v >= 1 && v < 2)  return Math.round((v % 1) * 1440);
+    if (Number.isInteger(v) && v >= 100 && v <= 2359){
+      const h = Math.floor(v / 100), m = v % 100;
+      return (h <= 23 && m <= 59) ? h * 60 + m : null;
+    }
+    return null;
+  }
+  let s = String(v).trim().toUpperCase();
+  if (!s) return null;
+  let m = s.match(/^(\d{1,2})[:.](\d{2})(?::\d{2})?\s*(AM|PM)?$/);
+  if (m){
+    let h = +m[1], mi = +m[2];
+    const ap = m[3];
+    if (ap === 'PM' && h < 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    if (h > 23 || mi > 59) return null;
+    return h * 60 + mi;
+  }
+  m = s.match(/^(\d{1,2})(\d{2})$/);
+  if (m){
+    const h = +m[1], mi = +m[2];
+    if (h <= 23 && mi <= 59) return h * 60 + mi;
+  }
+  return null;
+}
+function durationMin(openMin, closeMin){
+  if (openMin === null || closeMin === null) return null;
+  let d = closeMin - openMin;
+  if (d < 0) d += 1440;
+  return d;
+}
+function cleanName(raw){
+  return String(raw ?? '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/[",]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+function extractFlightId(areaRaw){
+  const s = String(areaRaw ?? '').trim();
+  const m = s.match(/^([A-Za-z0-9]+(?:\/[A-Za-z0-9]+)?)/);
+  return (m ? m[1] : s).toUpperCase();
+}
+function isTeamLeaderRole(role){
+  return TEAM_LEADER_RE.test(String(role ?? ''));
+}
+
+function showAlert(msg, type='danger'){
+  document.getElementById('alertBox').innerHTML =
+    `<div class="alert alert-${type} py-2 px-3 mb-0 mt-2 small d-flex align-items-center gap-2">
+       <i class="bi bi-exclamation-circle"></i><div>${msg}</div></div>`;
+}
+function clearAlert(){ document.getElementById('alertBox').innerHTML=''; }
+
+const hasActivity = s => s.flights.size > 0;
+const isLong      = s => s.totalMin > SHIFT_LIMIT_MIN;
+
+/* =====================================================================
+   PARSING
+   ===================================================================== */
+function resolveColumns(headers){
+  const normHeaders = headers.map(h => ({ raw:h, n:norm(h) }));
+  const map = {};
+  for (const key of Object.keys(COLMAP)){
+    const found = normHeaders.find(h => COLMAP[key].includes(h.n));
+    map[key] = found ? found.raw : null;
+  }
+  return map;
+}
+function buildRecords(aoa){
+  const headerIdx = aoa.findIndex(r => Array.isArray(r) && r.some(c => String(c ?? '').trim() !== ''));
+  if (headerIdx < 0) throw new Error('The file appears to be empty.');
+
+  const headers = aoa[headerIdx].map(h => String(h ?? '').trim());
+  const cols = resolveColumns(headers);
+
+  const missing = [];
+  if (!cols.flight)   missing.push('Area / Flight');
+  if (!cols.start)    missing.push('Start Time');
+  if (!cols.end)      missing.push('End Time');
+  if (!cols.role)     missing.push('Role');
+  if (!cols.employee) missing.push('Employee Name');
+  if (missing.length){
+    throw new Error(
+      'Could not locate required column(s): <strong>' + missing.join(', ') + '</strong>. ' +
+      'Columns found: <em>' + headers.filter(Boolean).map(esc).join(', ') + '</em>'
+    );
+  }
+
+  const records = [];
+  for (let i = headerIdx + 1; i < aoa.length; i++){
+    const row = aoa[i];
+    if (!Array.isArray(row) || row.every(c => String(c ?? '').trim() === '')) continue;
+
+    const obj = {};
+    headers.forEach((h, idx) => { if (h) obj[h] = row[idx]; });
+    const getRaw = k => (cols[k] ? obj[cols[k]] : '');
+    const getStr = k => String(getRaw(k) ?? '').trim();
+
+    records.push({
+      areaRaw : getStr('flight'),
+      startRaw: getRaw('start'),
+      endRaw  : getRaw('end'),
+      role    : getStr('role'),
+      nameRaw : getStr('employee'),
+      line    : i + 1
+    });
+  }
+  return records;
+}
+async function handleFile(file){
+  clearAlert();
+  try {
+    const name = file.name.toLowerCase();
+    let aoa;
+    if (name.endsWith('.csv') || name.endsWith('.txt')){
+      const text = await file.text();
+      const res = Papa.parse(text.trim(), { skipEmptyLines:'greedy' });
+      if (!res.data || !res.data.length) throw new Error('Unable to parse the CSV file.');
+      aoa = res.data;
+    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')){
+      const buf = await file.arrayBuffer();
+      const wb  = XLSX.read(buf, { type:'array' });
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      if (!ws) throw new Error('The workbook contains no sheets.');
+      aoa = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true, blankrows:false });
+    } else {
+      throw new Error('Unsupported file type. Please upload a .csv, .xlsx or .xls file.');
+    }
+
+    const records = buildRecords(aoa);
+    if (!records.length) throw new Error('No data rows found beneath the header row.');
+
+    analyse(records);
+    state.sourceName = file.name;
+
+    document.getElementById('fileInfo').classList.remove('d-none');
+    document.getElementById('fileInfo').innerHTML =
+      `<div class="alert alert-success py-2 px-3 mb-0 small d-flex align-items-center gap-2">
+         <i class="bi bi-check-circle"></i>
+         <div><strong>${esc(file.name)}</strong> loaded &middot; ${records.length} data row(s) parsed
+         &middot; ${state.duplicates} duplicate row(s) ignored.</div></div>`;
+    enableActions();
+  } catch (err){
+    console.error(err);
+    showAlert(err.message || 'An unexpected error occurred while reading the file.');
+  }
+}
+function enableActions(){
+  document.getElementById('searchInput').disabled = false;
+  document.getElementById('flightSelect').disabled = false;
+  document.getElementById('flightEmployeeSearch').disabled = false;
+  document.getElementById('btnExport').disabled = false;
+  document.getElementById('btnPdf').disabled = false;
+}
+
+/* =====================================================================
+   ANALYSIS
+   ===================================================================== */
+function analyse(records){
+  const staffMap  = new Map();
+  const flightSet = new Set();
+  const seen      = new Set();
+  let duplicates  = 0;
+
+  const ensure = name => {
+    let s = staffMap.get(name);
+    if (!s){
+      s = { name, flights:new Set(), entries:[], workedMin:0, totalMin:0,
+            totalFlights:0, incomplete:0, teamLeader:false };
+      staffMap.set(name, s);
+    }
+    return s;
+  };
+
+  records.forEach(r => {
+    const flightId = extractFlightId(r.areaRaw);
+    const name     = cleanName(r.nameRaw);
+    if (!flightId || !name) return;
+
+    flightSet.add(flightId);
+
+    const openMin  = parseTimeToMin(r.startRaw);
+    const closeMin = parseTimeToMin(r.endRaw);
+    const durMin   = durationMin(openMin, closeMin);
+    const leader   = isTeamLeaderRole(r.role);
+
+    const key = flightId + '||' + name;
+    if (seen.has(key)){ duplicates++; return; }
+    seen.add(key);
+
+    const s = ensure(name);
+    if (leader) s.teamLeader = true;
+
+    s.flights.add(flightId);
+    if (durMin === null) s.incomplete++;
+
+    s.entries.push({
+      flight: flightId,
+      openRaw: String(r.startRaw ?? '').trim(),
+      closeRaw: String(r.endRaw ?? '').trim(),
+      openMin, closeMin, durMin,
+      role: r.role,
+      teamLeader: leader
+    });
+  });
+
+  staffMap.forEach(s => {
+    let workedMin = 0;
+    s.entries.forEach(e => { if (e.durMin !== null) workedMin += e.durMin; });
+    s.workedMin    = workedMin;
+    s.totalMin     = workedMin;
+    s.totalFlights = s.flights.size;
+  });
+
+  /* Descending order */
+  const staff = [...staffMap.values()].sort((a,b) =>
+    b.totalFlights - a.totalFlights ||
+    b.totalMin     - a.totalMin     ||
+    a.name.localeCompare(b.name)
+  );
+
+  state.staff       = staff;
+  state.flightCount = flightSet.size;
+  state.duplicates  = duplicates;
+
+  render();
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+function render(){
+  const all = state.staff;
+  const q   = document.getElementById('searchInput').value.trim().toLowerCase();
+  const list = q
+    ? all.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        [...s.flights].some(f => f.toLowerCase().includes(q)))
+    : all;
+
+  const totalMin   = all.reduce((a,s) => a + s.totalMin, 0);
+  const overCount  = all.filter(isLong).length;
+  const leaderCount= all.filter(s => s.teamLeader).length;
+
+  document.getElementById('kpiFlights').textContent = state.flightCount;
+  document.getElementById('kpiStaff').textContent   = all.length;
+  document.getElementById('kpiLeader').textContent  = leaderCount ? `· ${leaderCount} TL` : '';
+  document.getElementById('kpiHours').textContent   = (totalMin / 60).toFixed(1);
+  document.getElementById('kpiHoursSub').textContent = 'Total man-hours · ' + fmtHM(totalMin);
+  document.getElementById('kpiOver').textContent    = overCount;
+  document.getElementById('kpiOverCard').classList.toggle('kpi-alert', overCount > 0);
+
+  renderFlightRoster(all);
+  renderStaffTable(list);
+  renderVerification(all);
+}
+
+function renderFlightRoster(staff){
+  const select = document.getElementById('flightSelect');
+  const previousFlight = select.value;
+  const flights = [...new Set(staff.flatMap(employee => employee.entries.map(entry => entry.flight)))].sort();
+  select.innerHTML = flights.length
+    ? flights.map(flight => `<option value="${esc(flight)}">${esc(flight)}</option>`).join('')
+    : '<option value="">No flights loaded</option>';
+
+  if (flights.includes(previousFlight)) select.value = previousFlight;
+  else select.value = flights[0] || '';
+
+  const selectedFlight = select.value;
+  const query = document.getElementById('flightEmployeeSearch').value.trim().toLowerCase();
+  const roster = staff.flatMap(employee => employee.entries
+    .filter(entry => entry.flight === selectedFlight)
+    .map(entry => ({ employee, entry })))
+    .sort((a, b) => a.employee.name.localeCompare(b.employee.name));
+  const visibleRoster = query
+    ? roster.filter(({ employee, entry }) =>
+        employee.name.toLowerCase().includes(query) || entry.role.toLowerCase().includes(query))
+    : roster;
+
+  document.getElementById('rosterFlight').textContent = selectedFlight || '—';
+  document.getElementById('rosterEmployees').textContent = roster.length;
+  document.getElementById('rosterLeaders').textContent = roster.filter(({ entry }) => entry.teamLeader).length;
+
+  const body = document.getElementById('flightRosterBody');
+  if (!selectedFlight){
+    body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Upload a roster or load sample data to view employees by flight.</td></tr>';
+    return;
+  }
+  if (!visibleRoster.length){
+    body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No employees match this search.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = visibleRoster.map(({ employee, entry }, index) => `
+    <tr>
+      <td class="text-muted">${index + 1}</td>
+      <td class="fw-semibold">${esc(employee.name)}</td>
+      <td>${entry.teamLeader
+        ? `<span class="badge badge-soft-leader"><i class="bi bi-star-fill me-1"></i>${esc(entry.role) || 'Team Leader'}</span>`
+        : (esc(entry.role) || '—')}</td>
+      <td class="mono">${esc(displayTime(entry.openMin, entry.openRaw))}</td>
+      <td class="mono">${esc(displayTime(entry.closeMin, entry.closeRaw))}</td>
+      <td class="mono">${entry.durMin === null ? '—' : fmtHM(entry.durMin)}</td>
+    </tr>`).join('');
+}
+
+function detailTable(entries){
+  if (!entries.length) return '';
+  return `
+    <table class="table table-sm mb-0">
+      <thead><tr>
+        <th style="width:90px">Flight</th>
+        <th style="width:90px">Start</th>
+        <th style="width:90px">End</th>
+        <th style="width:95px">Duration</th>
+        <th>Role</th>
+        <th style="width:130px">Status</th>
+      </tr></thead>
+      <tbody>
+        ${entries.map(e => {
+          const bad   = e.durMin === null;
+          const long  = e.durMin !== null && e.durMin > SHIFT_LIMIT_MIN;
+          let statusBadge;
+          if (bad)        statusBadge = '<span class="badge badge-soft-warn">Invalid time</span>';
+          else if (long)  statusBadge = '<span class="badge badge-soft-danger">Long shift</span>';
+          else            statusBadge = '<span class="badge badge-soft-ok">OK</span>';
+          const roleCell = e.teamLeader
+            ? `<span class="badge badge-soft-leader"><i class="bi bi-star me-1"></i>${esc(e.role) || 'Team Leader'}</span>`
+            : (esc(e.role) || '—');
+          return `<tr>
+            <td class="fw-semibold">${esc(e.flight)}</td>
+            <td class="mono">${esc(displayTime(e.openMin, e.openRaw))}</td>
+            <td class="mono">${esc(displayTime(e.closeMin, e.closeRaw))}</td>
+            <td class="mono fw-semibold">${bad ? '—' : fmtHM(e.durMin)}</td>
+            <td>${roleCell}</td>
+            <td>${statusBadge}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderStaffTable(list){
+  const body = document.getElementById('staffBody');
+  if (!list.length){
+    body.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No matching staff records.</td></tr>`;
+    return;
+  }
+  let html = '';
+  list.forEach((s, i) => {
+    const over   = isLong(s);
+    const worked = [...s.flights].sort();
+    const active = hasActivity(s);
+    const incTotal = s.incomplete;
+
+    const workedChips = worked.length
+      ? worked.map(f => `<span class="flt-badge flt-worked">${esc(f)}</span>`).join('')
+      : '<span class="text-muted">—</span>';
+
+    const badges = [];
+    if (s.teamLeader) badges.push(`<span class="badge badge-soft-leader"><i class="bi bi-star-fill me-1"></i>Team Leader</span>`);
+    if (over)  badges.push(`<span class="badge badge-soft-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Verify &gt; 10h</span>`);
+    if (incTotal) badges.push(`<span class="badge badge-soft-warn"><i class="bi bi-question-circle me-1"></i>${incTotal} incomplete</span>`);
+    if (!badges.length) badges.push(`<span class="badge badge-soft-ok"><i class="bi bi-check-lg me-1"></i>OK</span>`);
+
+    const workedTable = s.entries.length ? `
+      <div class="detail-section-title">Worked flights &middot; ${fmtHM(s.workedMin)}</div>
+      ${detailTable(s.entries)}` : '';
+
+    html += `
+      <tr class="staff-row ${over ? 'table-warning' : ''}" data-i="${i}">
+        <td class="text-muted"><i class="bi bi-chevron-right chev me-1" style="font-size:10px"></i>${i+1}</td>
+        <td class="fw-semibold">${esc(s.name)}</td>
+        <td>${workedChips}</td>
+        <td class="text-center col-count">
+          <span class="count-pill mono ${s.totalFlights === 0 ? 'count-pill-zero' : ''}">${s.totalFlights}</span>
+        </td>
+        <td class="text-end fw-semibold mono ${over ? 'text-danger' : ''}">
+          ${active ? fmtTotalTime(s.totalMin) : '—'}
+        </td>
+        <td>${badges.join(' ')}</td>
+      </tr>
+      <tr class="detail-row d-none" data-detail="${i}">
+        <td colspan="6"><div class="detail-wrap">
+          ${workedTable}
+          ${!workedTable ? '<div class="text-muted" style="font-size:12px">No flights recorded.</div>' : ''}
+          ${active ? `<div class="mt-2" style="font-size:11.5px">
+            <span class="text-muted fw-semibold">Breakdown:</span>
+            flights <strong>${s.flights.size}</strong>
+            &nbsp;|&nbsp;
+            hours <strong>${fmtHM(s.totalMin)}</strong>
+          </div>` : ''}
+        </div></td>
+      </tr>`;
+  });
+  body.innerHTML = html;
+
+  body.querySelectorAll('.staff-row').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const i = tr.dataset.i;
+      const detail = body.querySelector(`[data-detail="${i}"]`);
+      if (!detail) return;
+      detail.classList.toggle('d-none');
+      tr.classList.toggle('open');
+    });
+  });
+}
+
+function breakdownOf(s){
+  return s.entries.map(e =>
+    `${e.flight}(${displayTime(e.openMin,e.openRaw)}–${displayTime(e.closeMin,e.closeRaw)})`
+  ).join(', ');
+}
+
+function renderVerification(staff){
+  const flagged = staff.filter(isLong);
+  const el = document.getElementById('verifyBody');
+  if (!staff.length){
+    el.innerHTML = `<div class="empty-note">Upload a file to run the 10-hour shift verification.</div>`;
+    return;
+  }
+  if (!flagged.length){
+    el.innerHTML = `<div class="alert alert-success py-2 px-3 mb-0 small d-flex align-items-center gap-2">
+      <i class="bi bi-check-circle-fill"></i>
+      <div>No employee exceeded the <strong>10-hour</strong> shift threshold.</div></div>`;
+    return;
+  }
+  let html = `
+    <div class="alert alert-warning py-2 px-3 small mb-2 d-flex align-items-center gap-2">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <div><strong>${flagged.length}</strong> employee(s) exceed the standard 10-hour shift.</div>
+    </div>
+    <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+      <thead class="table-light"><tr>
+        <th>Employee</th>
+        <th class="text-center" style="width:100px">Total flights</th>
+        <th class="text-end" style="width:130px">Total time</th>
+        <th class="text-end" style="width:115px">Over limit by</th>
+        <th style="width:300px">Flight breakdown</th>
+      </tr></thead><tbody>`;
+  flagged.forEach(s => {
+    html += `<tr class="table-warning">
+      <td class="fw-semibold">${esc(s.name)}${s.teamLeader ? ' <span class="badge badge-soft-leader"><i class="bi bi-star-fill me-1"></i>TL</span>' : ''}</td>
+      <td class="text-center mono">${s.totalFlights}</td>
+      <td class="text-end fw-bold text-danger mono">${fmtTotalTime(s.totalMin)}</td>
+      <td class="text-end mono">+${fmtHM(s.totalMin - SHIFT_LIMIT_MIN)}</td>
+      <td class="text-muted" style="font-size:11.5px">${esc(breakdownOf(s))}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  el.innerHTML = html;
+}
+
+/* =====================================================================
+   CSV EXPORT — Employee, Flights Worked (count), Flights List, Total Time, Team Leader
+   ===================================================================== */
+function exportCSV(){
+  if (!state.staff.length) return;
+  const rows = [['Employee','Flights Worked','Flights Worked (List)','Total Time Worked (HH:MM)','Team Leader']];
+  state.staff.forEach(s => {
+    rows.push([
+      s.name,
+      s.flights.size,
+      [...s.flights].sort().join(' | '),
+      hasActivity(s) ? fmtTotalTime(s.totalMin) : '00:00',
+      s.teamLeader ? 'YES' : ''
+    ]);
+  });
+  const csv = rows.map(r => r.map(c => {
+    const v = String(c ?? '');
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'flight-summary.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* =====================================================================
+   PDF EXPORT — template styling + flights worked list
+   ===================================================================== */
+function statusOf(s){
+  if (isLong(s)) return 'VERIFY - over 10h';
+  if (s.incomplete) return 'Incomplete data';
+  return 'OK';
+}
+
+function exportPDF(){
+  if (!state.staff.length) return;
+  if (!window.jspdf || !window.jspdf.jsPDF){
+    showAlert('The PDF library could not be loaded. Check your internet connection and reload.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc    = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4', compress:true });
+  const pageW  = doc.internal.pageSize.getWidth();
+  const pageH  = doc.internal.pageSize.getHeight();
+  const M      = 10;
+
+  /* ---------- header band ---------- */
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageW, 17, 'F');
+  doc.setFillColor(29, 78, 216);
+  doc.rect(0, 17, pageW, 1.2, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text('Flight Staff Hours Analyser', M, 8);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(191, 219, 254);
+  doc.text('Duty hours & flight assignment report  -  Start Time to End Time', M, 13.2);
+
+  doc.setFontSize(7.5);
+  doc.setTextColor(226, 232, 240);
+  const src = (state.sourceName || 'manual input');
+  doc.text('Source: ' + (src.length > 55 ? src.slice(0, 52) + '...' : src), pageW - M, 7.4, { align:'right' });
+  doc.text('Generated: ' + new Date().toLocaleString(), pageW - M, 11.6, { align:'right' });
+
+  /* ---------- KPI strip ---------- */
+  const totalMin  = state.staff.reduce((a, s) => a + s.totalMin, 0);
+  const totalFlts = state.staff.reduce((a, s) => a + s.totalFlights, 0);
+  const overCount = state.staff.filter(isLong).length;
+  const leaderCnt = state.staff.filter(s => s.teamLeader).length;
+  const supCnt    = state.staff.length;
+
+  const kpis = [
+    ['Flights analysed',         String(state.flightCount)],
+    ['Employees',                String(supCnt)],
+    ['Total flight assignments', String(totalFlts)],
+    ['Total man-hours',          fmtHM(totalMin)],
+    ['Team leaders',             String(leaderCnt)],
+    ['Over 10 hours',            String(overCount)]
+  ];
+  const gap  = 2.2;
+  const boxW = (pageW - 2 * M - gap * (kpis.length - 1)) / kpis.length;
+  const boxY = 23;
+
+  kpis.forEach(([label, val], i) => {
+    const bx = M + i * (boxW + gap);
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.25);
+    doc.roundedRect(bx, boxY, boxW, 13, 1.5, 1.5, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(5.4);
+    doc.setTextColor(100, 116, 139);
+    doc.text(label.toUpperCase(), bx + 2.2, boxY + 4.6);
+
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(val, bx + 2.2, boxY + 10.6);
+  });
+
+  /* ---------- main staff table (with flights worked list) ---------- */
+  const body = state.staff.map((s, i) => {
+    const flightsList = [...s.flights].sort().join(', ');
+    const active      = hasActivity(s);
+
+    return [
+      i + 1,
+      s.teamLeader ? s.name + '  (TL)' : s.name,
+      flightsList || '—',
+      s.totalFlights,
+      active ? fmtTotalTime(s.totalMin) : '—',
+      statusOf(s)
+    ];
+  });
+
+  doc.autoTable({
+    startY: 41,
+    margin: { left: M, right: M },
+    head: [['#', 'Employee', 'Flights Worked (list)', 'Total Flights', 'Total Time (HH:MM)', 'Status']],
+    body,
+    styles: {
+      font: 'helvetica', fontSize: 7.6, cellPadding: 1.8,
+      lineColor: [226, 232, 240], lineWidth: 0.15,
+      textColor: [30, 41, 59], overflow: 'linebreak', valign: 'middle'
+    },
+    headStyles: {
+      fillColor: [15, 23, 42], textColor: 255,
+      fontSize: 6.8, fontStyle: 'bold', halign: 'left'
+    },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: {
+      0: { cellWidth: 8,  halign: 'center', textColor: [100, 116, 139] },
+      1: { cellWidth: 42, fontStyle: 'bold' },
+      2: { cellWidth: 140, textColor: [29, 78, 216] },  /* flights list – blue */
+      3: { cellWidth: 28, halign: 'center', fillColor: [238, 242, 255], textColor: [67, 56, 202], fontStyle: 'normal', fontSize: 9 },
+      4: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
+      5: { cellWidth: 'auto' }
+    },
+    didParseCell(data){
+      if (data.section !== 'body') return;
+      const raw = String(data.cell.raw);
+
+      /* colour-code status column */
+      if (data.column.index === 5){
+        if (raw.startsWith('VERIFY'))      data.cell.styles.textColor = [185, 28, 28];
+        else if (raw.startsWith('Incomplete')) data.cell.styles.textColor = [146, 64, 14];
+        else                                data.cell.styles.textColor = [21, 128, 61];
+        data.cell.styles.fontStyle = 'bold';
+      }
+
+      /* highlight hours red when > 10h */
+      if (data.column.index === 4){
+        const s = state.staff[data.row.index];
+        if (s && isLong(s)) data.cell.styles.textColor = [185, 28, 28];
+      }
+
+      /* highlight TL name cell background subtly */
+      if (data.column.index === 1){
+        const s = state.staff[data.row.index];
+        if (s && s.teamLeader){
+          data.cell.styles.textColor = [109, 40, 217];
+        }
+      }
+    }
+  });
+
+  /* ---------- verification (> 10h) ---------- */
+  const flagged = state.staff.filter(isLong);
+  if (flagged.length){
+    let y2 = doc.lastAutoTable.finalY + 9;
+    if (y2 > pageH - 45){ doc.addPage(); y2 = 20; }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(185, 28, 28);
+    doc.text('Shift verification - employees exceeding 10 hours', M, y2);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.4);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Standard shift is 10h 00m. Total time = sum of (End Time - Start Time) across all flights.', M, y2 + 4.5);
+
+    doc.autoTable({
+      startY: y2 + 7,
+      margin: { left: M, right: M },
+      head: [['Employee', 'Total Flights', 'Total Time', 'Over by', 'Flights worked']],
+      body: flagged.map(s => [
+        s.name + (s.teamLeader ? '  (TL)' : ''),
+        s.totalFlights,
+        fmtTotalTime(s.totalMin),
+        '+' + fmtHM(s.totalMin - SHIFT_LIMIT_MIN),
+        [...s.flights].sort().join(', ') || '—'
+      ]),
+      styles: {
+        font: 'helvetica', fontSize: 7.2, cellPadding: 1.8,
+        lineColor: [254, 202, 202], lineWidth: 0.15, overflow: 'linebreak'
+      },
+      headStyles: { fillColor: [185, 28, 28], textColor: 255, fontSize: 6.8, fontStyle: 'bold' },
+      bodyStyles: { fillColor: [254, 242, 242], textColor: [30, 41, 59] },
+      columnStyles: {
+        0: { cellWidth: 42, fontStyle: 'bold' },
+        1: { cellWidth: 26, halign: 'center' },
+        2: { cellWidth: 30, halign: 'right', fontStyle: 'bold', textColor: [185, 28, 28] },
+        3: { cellWidth: 26, halign: 'right', textColor: [185, 28, 28] },
+        4: { cellWidth: 'auto', textColor: [29, 78, 216] }
+      }
+    });
+  }
+
+  /* ---------- notes footer ---------- */
+  let ny = doc.lastAutoTable.finalY + 7;
+  if (ny > pageH - 30){ doc.addPage(); ny = 20; }
+
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.line(M, ny, pageW - M, ny);
+
+  const notes = [
+    'Input columns: Area / Flight, Start Time, End Time, Role, Employee Name.',
+    'Team Leader = rows whose Role contains "team leader" / "leader" / "TL" — marked (TL) beside the employee name.',
+    'Total time = sum of (End Time - Start Time) per employee; overnight turnarounds roll over midnight.',
+    'Each flight is counted once per employee. Times shown as HH:MM. Rows sorted by total flights descending.'
+  ];
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.8);
+  doc.setTextColor(120, 130, 145);
+
+  let cy = ny + 4;
+  notes.forEach(n => {
+    doc.splitTextToSize('• ' + n, pageW - 2 * M).forEach(line => {
+      doc.text(line, M, cy);
+      cy += 3.2;
+    });
+  });
+
+  /* ---------- page footers ---------- */
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++){
+    doc.setPage(i);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Flight Staff Hours Analyser', M, pageH - 6);
+    doc.text(`Page ${i} of ${pageCount}`, pageW - M, pageH - 6, { align:'right' });
+  }
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  doc.save(`flight-summary-${stamp}.pdf`);
+}
+
+/* =====================================================================
+   SAMPLE
+   ===================================================================== */
+const SAMPLE_CSV = `Area / Flight\tStart Time\tEnd Time\tRole\tEmployee Name
+4Z106/7 (1620-1705)\t16:20\t17:05\tBaggage Handlers\t"Musandwa, "
+4Z106/7 (1620-1705)\t16:20\t17:05\tBaggage Handlers\t"Nyaguze, "
+4Z106/7 (1620-1705)\t16:20\t17:05\tBaggage Handlers\t"Mukaka, "
+4Z106/7 (1620-1705)\t16:20\t17:05\tTeam Leader\t"Chikasha, "
+4Z106/7 (1620-1705)\t16:20\t17:05\tBaggage Handlers\t"Moyo, "
+4Z106/7 (1620-1705)\t16:20\t17:05\tBaggage Handlers\tGutu
+4Z382 (1700-1720)\t17:00\t17:20\tTeam Leader\tMabirira
+4Z382 (1700-1720)\t17:00\t17:20\tBaggage Handlers\t"Ganyata, "
+4Z382 (1700-1720)\t17:00\t17:20\tBaggage Handlers\t"Sekete, "
+4Z382 (1700-1720)\t17:00\t17:20\tBaggage Handlers\t"Chikasha, "
+4Z382 (1700-1720)\t17:00\t17:20\tBaggage Handlers\tGutu
+4Z106/7 (1620-1705)\t16:20\t17:05\tBaggage Handlers\t"Moyo, "`;
+
+function loadSample(){
+  clearAlert();
+  try {
+    const res = Papa.parse(SAMPLE_CSV, { skipEmptyLines:'greedy', delimiter:'\t' });
+    const records = buildRecords(res.data);
+    analyse(records);
+    state.sourceName = 'sample-data.tsv';
+    document.getElementById('fileInfo').classList.remove('d-none');
+    document.getElementById('fileInfo').innerHTML =
+      `<div class="alert alert-success py-2 px-3 mb-0 small d-flex align-items-center gap-2">
+         <i class="bi bi-check-circle"></i>
+         <div><strong>Sample data</strong> loaded &middot; ${records.length} data row(s) parsed
+         &middot; ${state.duplicates} duplicate row(s) ignored.</div></div>`;
+    enableActions();
+  } catch (err){
+    console.error(err);
+    showAlert(err.message || 'Could not load the sample.');
+  }
+}
+
+/* =====================================================================
+   WIRING
+   ===================================================================== */
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if (f) handleFile(f);
+  fileInput.value = '';
+});
+['dragenter','dragover'].forEach(ev =>
+  dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev =>
+  dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('drag'); }));
+dropZone.addEventListener('drop', e => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+document.getElementById('btnSample').addEventListener('click', loadSample);
+document.getElementById('btnExport').addEventListener('click', exportCSV);
+document.getElementById('btnPdf').addEventListener('click', exportPDF);
+document.getElementById('searchInput').addEventListener('input', render);
+document.getElementById('flightSelect').addEventListener('change', () => renderFlightRoster(state.staff));
+document.getElementById('flightEmployeeSearch').addEventListener('input', () => renderFlightRoster(state.staff));
+document.getElementById('flightRosterToggle').addEventListener('click', event => {
+  const button = event.currentTarget;
+  const expanded = button.getAttribute('aria-expanded') === 'true';
+  button.setAttribute('aria-expanded', String(!expanded));
+  document.getElementById('flightRosterContent').hidden = expanded;
+  button.querySelector('span').textContent = expanded ? 'Expand' : 'Collapse';
+  button.querySelector('i').className = expanded ? 'bi bi-chevron-down me-1' : 'bi bi-chevron-up me-1';
+});
+</script>
+</body>
+</html>

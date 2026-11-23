@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Rostering </title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    :root {
+      --brand-dark: #0a2e4b;
+      --brand-mid: #1c4e6f;
+      --brand-light: #e7f0f9;
+      --green: #2b9e6e;
+      --amber: #e6a817;
+      --red: #c0392b;
+      --grey: #adb5bd;
+      --surface: #ffffff;
+      --bg: #f4f7fc;
+      --locked: #6c757d;
+      --shift-a: #1c4e6f;
+      --shift-b: #2b9e6e;
+      --shift-c: #8e44ad;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+      font-size: 0.88rem;
+      color: #24313b;
+    }
+    .app-header {
+      background: linear-gradient(135deg, #0a2e4b 0%, #1c4e6f 100%);
+      color: #fff;
+      padding: 0.9rem 0;
+      margin-bottom: 1.2rem;
+      box-shadow: 0 4px 14px rgba(0,20,40,0.10);
+    }
+    .app-header h1 { font-size: 1.15rem; margin: 0; font-weight: 700; letter-spacing: 0.3px; }
+    .app-header .sub { font-size: 0.72rem; opacity: 0.8; }
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,20,40,0.06);
+      background: var(--surface);
+    }
+    .card-header {
+      background: #fbfdff;
+      border-bottom: 1px solid #e9eef3;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: 12px 12px 0 0 !important;
+      color: var(--brand-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .card-body { padding: 0.85rem 0.9rem; }
+    .summary-card .card-body { padding: 0.7rem 0.9rem; }
+    .summary-number { font-size: 1.4rem; font-weight: 700; line-height: 1.1; color: var(--brand-dark); }
+    .summary-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c7e8f; }
+    .badge-skill {
+      background: var(--brand-light); color: #135b8c; font-weight: 500;
+      margin-right: 3px; margin-bottom: 2px; font-size: 0.65rem;
+      padding: 0.25em 0.6em; border-radius: 20px;
+    }
+    .availability-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .dot-available { background: var(--green); }
+    .dot-unavailable { background: var(--red); }
+    .btn-xs { padding: 0.15rem 0.45rem; font-size: 0.72rem; border-radius: 6px; }
+    .btn-brand { background: var(--brand-mid); color: #fff; border: none; }
+    .btn-brand:hover { background: var(--brand-dark); color: #fff; }
+    .table { font-size: 0.82rem; }
+    .table th { font-weight: 600; color: var(--brand-mid); background: #f9fcff; border-bottom-width: 1px; }
+    .empty-state { color: #8a9aa8; font-style: italic; padding: 0.8rem 0; text-align: center; font-size: 0.8rem; }
+    .modal-content { border-radius: 12px; border: none; }
+    .modal-header { background: #f4f9ff; border-radius: 12px 12px 0 0; border-bottom: 1px solid #dde9f2; padding: 0.75rem 1rem; }
+    .modal-title { font-size: 0.95rem; font-weight: 700; color: var(--brand-dark); }
+    .modal-body { padding: 0.9rem 1rem; }
+    .form-label { font-weight: 500; font-size: 0.78rem; color: #2d4b63; margin-bottom: 0.2rem; }
+    .form-control, .form-select { font-size: 0.82rem; padding: 0.35rem 0.6rem; }
+    .form-text { font-size: 0.68rem; }
+
+    /* Pool */
+    .pool-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.4rem 0.55rem; margin-bottom: 0.35rem;
+      background: #f9fcff; border-radius: 8px; border: 1px solid #e2eaf1;
+      cursor: grab; transition: background 0.12s, box-shadow 0.12s;
+      font-size: 0.78rem; gap: 0.4rem;
+    }
+    .pool-item:hover { background: #e9f3fb; box-shadow: 0 1px 5px rgba(0,60,120,0.08); }
+    .pool-item:active { cursor: grabbing; }
+    .pool-item.dragging { opacity: 0.5; background: #cfe3f5; }
+    .pool-item.unavailable { opacity: 0.5; cursor: not-allowed; background: #f0f0f0; border-color: #d5d5d5; }
+    .pool-item.busy { background: #fff3cd; border-color: #ffe69c; }
+    .pool-item.busy .emp-name { color: #856404; }
+    .pool-item .emp-name { font-weight: 600; color: var(--brand-dark); }
+    .pool-item .emp-meta { font-size: 0.68rem; color: #5d7385; }
+    .pool-badge {
+      font-size: 0.6rem; padding: 0.15em 0.5em; border-radius: 12px;
+      background: #d1e7f7; color: #135b8c; white-space: nowrap;
+    }
+    .pool-badge.busy-badge { background: #ffe69c; color: #856404; }
+    .pool-scroll { max-height: 520px; overflow-y: auto; padding-right: 2px; }
+
+    /* Shift badges */
+    .shift-badge {
+      display: inline-block; padding: 0.15em 0.6em; border-radius: 12px;
+      font-size: 0.65rem; font-weight: 700; color: #fff; letter-spacing: 0.5px;
+    }
+    .shift-A { background: var(--shift-a); }
+    .shift-B { background: var(--shift-b); }
+    .shift-C { background: var(--shift-c); }
+
+    /* Flight cards */
+    .flight-card {
+      border-radius: 10px; border: 1px solid #e3ecf3; margin-bottom: 0.7rem;
+      background: #fff; box-shadow: 0 1px 6px rgba(0,20,40,0.04); overflow: hidden;
+    }
+    .flight-card.understaffed { border-left: 4px solid var(--red); }
+    .flight-card.adequate { border-left: 4px solid var(--green); }
+    .flight-card.overstaffed { border-left: 4px solid var(--amber); }
+    .flight-card.locked { border-left: 4px solid var(--locked); background: #f8f9fa; }
+    .flight-card.overlap { border-left: 4px solid #e67e22; }
+    .flight-card-header {
+      padding: 0.55rem 0.8rem; background: #f7fbfe; border-bottom: 1px solid #e3ecf3;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem;
+    }
+    .flight-title { font-weight: 700; color: var(--brand-dark); font-size: 0.88rem; }
+    .flight-sub { font-size: 0.72rem; color: #5d7385; }
+    .flight-card-body { padding: 0.6rem 0.8rem; }
+    .staff-indicator { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; }
+    .staff-green { background: var(--green); }
+    .staff-amber { background: var(--amber); }
+    .staff-red { background: var(--red); }
+    .staff-grey { background: var(--grey); }
+    .staff-orange { background: #e67e22; }
+    .staff-badge {
+      font-size: 0.68rem; padding: 0.25em 0.65em; border-radius: 20px; font-weight: 600;
+    }
+    .staff-badge.green { background: #d4f2e3; color: #1e7a4e; }
+    .staff-badge.amber { background: #fdf0d3; color: #b07d0a; }
+    .staff-badge.red { background: #f8d7da; color: #a83232; }
+    .staff-badge.grey { background: #e2e3e5; color: #41464b; }
+    .staff-badge.orange { background: #fdebd0; color: #a04000; }
+
+    /* Activity blocks */
+    .activity-block {
+      border: 1px dashed #cdddea; border-radius: 8px; padding: 0.4rem 0.55rem;
+      margin-bottom: 0.4rem; background: #fbfdff; min-height: 46px;
+    }
+    .activity-block.drag-over { background: #e3f2fd; border-color: var(--brand-mid); border-style: solid; }
+    .activity-block.locked-block { background: #f1f3f5; border-color: #dee2e6; }
+    .activity-block.drop-disabled { background: #f8f9fa; border-color: #e9ecef; opacity: 0.7; }
+    .activity-header {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.72rem; font-weight: 600; color: var(--brand-mid); margin-bottom: 0.25rem;
+    }
+    .activity-header .act-name { display: flex; align-items: center; gap: 0.3rem; }
+    .activity-header .act-count { font-weight: 700; }
+    .allocated-item {
+      display: inline-flex; align-items: center; background: #e9f3fb;
+      border-radius: 14px; padding: 0.12rem 0.35rem 0.12rem 0.55rem;
+      font-size: 0.7rem; margin: 0 0.2rem 0.2rem 0; border: 1px solid #cfe0ee;
+      color: var(--brand-dark);
+    }
+    .allocated-item .remove-alloc {
+      margin-left: 4px; cursor: pointer; color: var(--red); font-weight: 700;
+      line-height: 1; display: inline-flex; align-items: center; font-size: 0.8rem;
+    }
+    .allocated-item .remove-alloc:hover { color: #7a1f1f; }
+    .allocated-item.locked-chip { background: #e2e3e5; border-color: #ced4da; }
+    .allocated-item.locked-chip .remove-alloc { display: none; }
+    .req-edit-input { width: 58px; display: inline-block; font-size: 0.72rem; padding: 0.1rem 0.3rem; }
+    .activity-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 3px; }
+    .dot-green { background: var(--green); }
+    .dot-amber { background: var(--amber); }
+    .dot-red { background: var(--red); }
+    .dot-grey { background: var(--grey); }
+    .activity-unmet { color: var(--red); font-size: 0.65rem; font-weight: 600; }
+
+    /* Aircraft chips */
+    .aircraft-chip {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      background: var(--brand-light); border: 1px solid #cfe0ee;
+      border-radius: 20px; padding: 0.2rem 0.65rem; font-size: 0.72rem;
+      color: var(--brand-dark); font-weight: 500; cursor: pointer; transition: background 0.12s;
+    }
+    .aircraft-chip:hover { background: #d7e8f7; }
+    .aircraft-chip.active { background: var(--brand-mid); color: #fff; border-color: var(--brand-mid); }
+    .aircraft-chip.locked-chip { opacity: 0.6; cursor: not-allowed; }
+    .aircraft-chip .reg { font-weight: 700; }
+
+    .flight-selector {
+      display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.6rem;
+    }
+    .flight-selector .flight-chip {
+      font-size: 0.72rem; padding: 0.2rem 0.65rem; border-radius: 20px;
+      border: 1px solid #cfe0ee; background: #f9fcff; color: var(--brand-dark);
+      cursor: pointer; transition: background 0.12s; position: relative;
+    }
+    .flight-selector .flight-chip:hover { background: #e9f3fb; }
+    .flight-selector .flight-chip.active { background: var(--brand-mid); color: #fff; border-color: var(--brand-mid); }
+    .flight-selector .flight-chip.completed { background: #e2e3e5; color: #41464b; border-color: #ced4da; }
+    .flight-selector .flight-chip.completed.active { background: var(--locked); color: #fff; border-color: var(--locked); }
+    .flight-selector .flight-chip.overlap-chip { border-color: #e67e22; }
+
+    .mini-legend { font-size: 0.68rem; color: #6c7e8f; }
+    .mini-legend span { margin-right: 0.6rem; }
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-thumb { background: #c9d6e2; border-radius: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    /* Filter bar */
+    .filter-bar {
+      background: #f7fbfe; border: 1px solid #e2eaf1; border-radius: 10px;
+      padding: 0.5rem 0.65rem; margin-bottom: 0.6rem;
+    }
+    .filter-bar .form-select, .filter-bar .form-control { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+    .filter-label { font-size: 0.68rem; font-weight: 600; color: var(--brand-mid); text-transform: uppercase; letter-spacing: 0.3px; }
+
+    /* Completion banner */
+    .completion-banner {
+      background: linear-gradient(135deg, #d4f2e3 0%, #b8e6d2 100%);
+      border: 1px solid #9fd9bf; border-radius: 10px; padding: 0.6rem 0.85rem;
+      font-size: 0.78rem; color: #1e7a4e; font-weight: 500;
+    }
+    .completion-banner.locked-banner {
+      background: linear-gradient(135deg, #e2e3e5 0%, #d1d3d6 100%);
+      border-color: #c1c4c8; color: #41464b;
+    }
+    .lock-icon { font-size: 1rem; margin-right: 0.3rem; }
+
+    /* Shift tabs */
+    .shift-tabs {
+      display: flex; gap: 0.35rem; margin-bottom: 0.6rem;
+    }
+    .shift-tab {
+      flex: 1; text-align: center; padding: 0.35rem 0.5rem;
+      border-radius: 8px; border: 1px solid #cfe0ee; background: #f9fcff;
+      font-size: 0.75rem; font-weight: 600; color: var(--brand-dark);
+      cursor: pointer; transition: all 0.12s;
+    }
+    .shift-tab:hover { background: #e9f3fb; }
+    .shift-tab.active { color: #fff; border-color: transparent; }
+    .shift-tab.active[data-shift="A"] { background: var(--shift-a); }
+    .shift-tab.active[data-shift="B"] { background: var(--shift-b); }
+    .shift-tab.active[data-shift="C"] { background: var(--shift-c); }
+    .shift-tab .tab-count { font-size: 0.65rem; opacity: 0.8; display: block; }
+
+    /* Shift warning */
+    .shift-warning {
+      background: #fff3cd; border: 1px solid #ffe69c; border-radius: 8px;
+      padding: 0.4rem 0.65rem; font-size: 0.72rem; color: #856404; margin-bottom: 0.5rem;
+    }
+    .overlap-warning {
+      background: #fdebd0; border: 1px solid #f5cba7; border-radius: 8px;
+      padding: 0.4rem 0.65rem; font-size: 0.72rem; color: #a04000; margin-bottom: 0.5rem;
+    }
+    .overlap-warning strong { color: #7e2f00; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="app-header">
+    <div class="container d-flex flex-wrap align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-airplane-engines fs-4"></i>
+        <div>
+          <h1>Check-in Roster</h1>
+          <div class="sub">Stage 6 – Simultaneous Flights &amp; Overlap Rules</div>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-2 mt-sm-0">
+        <span class="badge bg-light text-dark px-2 py-1 rounded-pill" style="font-size:0.68rem;">
+          <i class="bi bi-database-check me-1"></i>localStorage active
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="container pb-4">
+    <!-- Summary row -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-lg-3">
+        <div class="card summary-card">
+          <div class="card-body text-center">
+            <div class="summary-number" id="statFlights">0</div>
+            <div class="summary-label">Flights</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card summary-card">
+          <div class="card-body text-center">
+            <div class="summary-number" id="statAvailable">0</div>
+            <div class="summary-label">Available staff</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card summary-card">
+          <div class="card-body text-center">
+            <div class="summary-number" id="statAllocated">0</div>
+            <div class="summary-label">Allocated slots</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card summary-card">
+          <div class="card-body text-center">
+            <div class="summary-number" id="statCompleted">0</div>
+            <div class="summary-label">Completed flights</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <!-- LEFT: Employee pool -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">
+            <span><i class="bi bi-people-fill me-1"></i>Employee pool</span>
+            <button class="btn btn-brand btn-xs" id="addEmployeeBtn">
+              <i class="bi bi-plus-lg"></i> Add
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="shift-tabs" id="shiftTabs">
+              <div class="shift-tab active" data-shift="A">Shift A<span class="tab-count" id="shiftCountA">0</span></div>
+              <div class="shift-tab" data-shift="B">Shift B<span class="tab-count" id="shiftCountB">0</span></div>
+              <div class="shift-tab" data-shift="C">Shift C<span class="tab-count" id="shiftCountC">0</span></div>
+            </div>
+
+            <div class="filter-bar">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="filter-label"><i class="bi bi-funnel me-1"></i>Filter by responsibility</span>
+                <span class="mini-legend" id="filterCount">All</span>
+              </div>
+              <select class="form-select form-select-sm" id="responsibilityFilter">
+                <option value="">All responsibilities</option>
+                <option value="checkin">Check-in agents</option>
+                <option value="baggage">Baggage handlers</option>
+                <option value="gse">GSE operators</option>
+                <option value="cleaning">Aircraft cleaners</option>
+              </select>
+              <div class="d-flex gap-1 mt-1">
+                <button class="btn btn-outline-secondary btn-xs flex-fill" id="onlyAvailableBtn" style="font-size:0.68rem;">
+                  <i class="bi bi-check-circle"></i> Available only
+                </button>
+                <button class="btn btn-outline-secondary btn-xs flex-fill" id="clearFilterBtn" style="font-size:0.68rem;">
+                  <i class="bi bi-x-circle"></i> Clear
+                </button>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="mini-legend"><i class="bi bi-grip-vertical"></i> Drag to activities</span>
+              <button class="btn btn-outline-secondary btn-xs" id="manualAllocBtn">
+                <i class="bi bi-hand-index"></i> Manual
+              </button>
+            </div>
+            <div id="employeePoolList" class="pool-scroll"></div>
+          </div>
+          <div class="card-footer bg-white text-muted small border-0 pt-0" style="font-size:0.68rem;">
+            <i class="bi bi-info-circle me-1"></i>Amber items are busy on overlapping flights. Double-click to edit.
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Flights -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header">
+            <span><i class="bi bi-airplane me-1"></i>Flight schedule &amp; shift activities</span>
+            <div class="d-flex gap-1">
+              <button class="btn btn-brand btn-xs" id="addFlightBtn">
+                <i class="bi bi-plus-lg"></i> Flight
+              </button>
+              <button class="btn btn-outline-secondary btn-xs" id="addAircraftBtn">
+                <i class="bi bi-plus-lg"></i> Aircraft
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <span class="mini-legend fw-semibold">Select flight:</span>
+              <span class="mini-legend">
+                <span><span class="staff-indicator staff-green"></span>Adequate</span>
+                <span><span class="staff-indicator staff-amber"></span>Over</span>
+                <span><span class="staff-indicator staff-red"></span>Under</span>
+                <span><span class="staff-indicator staff-orange"></span>Overlap</span>
+                <span><span class="staff-indicator staff-grey"></span>Completed</span>
+              </span>
+            </div>
+            <div id="flightSelector" class="flight-selector"></div>
+            <div id="completionBar" class="mb-2"></div>
+            <div id="selectedFlightPanel"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODALS ===================== -->
+
+  <!-- Employee Modal -->
+  <div class="modal fade" id="employeeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="employeeModalTitle">Add employee</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="employeeForm">
+            <input type="hidden" id="employeeId">
+            <div class="mb-2">
+              <label class="form-label">Employee number</label>
+              <input type="text" class="form-control" id="empNumber" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Full name</label>
+              <input type="text" class="form-control" id="empName" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Shift</label>
+              <select class="form-select" id="empShift" required>
+                <option value="A">Shift A (06:00 – 14:00)</option>
+                <option value="B">Shift B (14:00 – 22:00)</option>
+                <option value="C">Shift C (22:00 – 06:00)</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Job title</label>
+              <select class="form-select" id="empCategory" required>
+                <option value="">Select job title</option>
+                <option>Check-in Agent</option>
+                <option>Baggage Handler</option>
+                <option>GSE Operator</option>
+                <option>Aircraft Cleaner</option>
+                <option>Boarding Agent</option>
+                <option>Arrivals Officer</option>
+                <option>Ramp Agent</option>
+                <option>Passenger Service Agent</option>
+                <option>Flight Documentation Officer</option>
+                <option>Shift Supervisor</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Responsibilities (comma separated)</label>
+              <input type="text" class="form-control" id="empSkills" placeholder="checkin, baggage, gse, cleaning">
+              <div class="form-text">Tags: checkin, baggage, gse, cleaning, boarding, ramp, docs, supervisor.</div>
+            </div>
+            <div class="form-check form-switch mb-1">
+              <input class="form-check-input" type="checkbox" id="empAvailable" checked>
+              <label class="form-check-label" for="empAvailable" style="font-size:0.78rem;">Available for shifts</label>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-xs" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-brand btn-xs" id="saveEmployeeBtn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flight Modal -->
+  <div class="modal fade" id="flightModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="flightModalTitle">Add flight</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="flightForm">
+            <input type="hidden" id="flightId">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label">Flight number</label>
+                <input type="text" class="form-control" id="flightNumber" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Airline</label>
+                <input type="text" class="form-control" id="flightAirline" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Origin</label>
+                <input type="text" class="form-control" id="flightOrigin" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Destination</label>
+                <input type="text" class="form-control" id="flightDestination" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Arrival</label>
+                <input type="time" class="form-control" id="flightArrival" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Departure</label>
+                <input type="time" class="form-control" id="flightDeparture" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Shift</label>
+                <select class="form-select" id="flightShift" required>
+                  <option value="A">Shift A (06:00 – 14:00)</option>
+                  <option value="B">Shift B (14:00 – 22:00)</option>
+                  <option value="C">Shift C (22:00 – 06:00)</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Staff per activity</label>
+                <input type="number" class="form-control" id="flightRequiredEmployees" min="1" value="2" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Required skills</label>
+                <input type="text" class="form-control" id="flightRequiredSkills" placeholder="checkin, baggage">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-xs" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-brand btn-xs" id="saveFlightBtn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aircraft Modal -->
+  <div class="modal fade" id="aircraftModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="aircraftModalTitle">Add aircraft</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="aircraftForm">
+            <input type="hidden" id="aircraftId">
+            <div class="mb-2">
+              <label class="form-label">Registration</label>
+              <input type="text" class="form-control" id="aircraftReg" required placeholder="e.g. G-ABCD">
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Aircraft type</label>
+              <input type="text" class="form-control" id="aircraftType" required placeholder="e.g. A320">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-xs" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-brand btn-xs" id="saveAircraftBtn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Allocation Modal -->
+  <div class="modal fade" id="manualAllocModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Manual allocation</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Flight (shift)</label>
+            <select class="form-select" id="manualFlightSelect"></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Activity</label>
+            <select class="form-select" id="manualActivitySelect"></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Available employee (same shift, not busy)</label>
+            <select class="form-select" id="manualEmployeeSelect"></select>
+          </div>
+          <div id="manualAllocError" class="text-danger" style="font-size:0.72rem;"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-xs" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-brand btn-xs" id="manualAllocConfirm">Allocate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complete Flight Confirmation Modal -->
+  <div class="modal fade" id="completeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Complete flight assignment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center mb-2">
+            <i class="bi bi-check2-circle text-success" style="font-size:2rem;"></i>
+          </div>
+          <p class="mb-2" style="font-size:0.82rem;">
+            Mark <strong id="completeFlightNumber"></strong> as <strong>completed</strong>?
+          </p>
+          <div id="completeWarnings" class="small"></div>
+          <p class="text-muted mt-2 mb-0" style="font-size:0.75rem;">
+            Once completed, allocations for this flight are locked.
+          </p>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-xs" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success btn-xs" id="confirmCompleteBtn">
+            <i class="bi bi-lock me-1"></i>Confirm complete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reopen Confirmation Modal -->
+  <div class="modal fade" id="reopenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Reopen flight</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" style="font-size:0.82rem;">
+            Reopening <strong id="reopenFlightNumber"></strong> will unlock it for editing. Continue?
+          </p>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-xs" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-warning btn-xs" id="confirmReopenBtn">
+            <i class="bi bi-unlock me-1"></i>Reopen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    // ==================== CONSTANTS ====================
+    const EMPLOYEES_KEY = 'airport_employees_stage6';
+    const FLIGHTS_KEY = 'airport_flights_stage6';
+    const ACTIVITY_ALLOC_KEY = 'airport_activity_alloc_stage6';
+    const AIRCRAFT_KEY = 'airport_aircraft_stage6';
+    const COMPLETED_KEY = 'airport_completed_flights_stage6';
+
+    const ACTIVITIES = [
+      { key: 'checkin',  label: 'Check-in agents',    icon: 'bi-person-badge', filterSkill: 'checkin' },
+      { key: 'baggage',  label: 'Baggage handlers',   icon: 'bi-suitcase-lg',  filterSkill: 'baggage' },
+      { key: 'gse',      label: 'GSE operators',      icon: 'bi-truck',        filterSkill: 'gse' },
+      { key: 'cleaning', label: 'Aircraft cleaners',  icon: 'bi-brush',        filterSkill: 'cleaning' }
+    ];
+
+    const SHIFTS = ['A', 'B', 'C'];
+
+    const JOB_TITLE_SKILLS = {
+      'Check-in Agent': ['checkin'],
+      'Baggage Handler': ['baggage'],
+      'GSE Operator': ['gse'],
+      'Aircraft Cleaner': ['cleaning'],
+      'Boarding Agent': ['boarding'],
+      'Arrivals Officer': ['arrivals'],
+      'Ramp Agent': ['ramp', 'baggage'],
+      'Passenger Service Agent': ['assistance', 'checkin'],
+      'Flight Documentation Officer': ['docs'],
+      'Shift Supervisor': ['supervisor', 'checkin', 'baggage', 'gse', 'cleaning']
+    };
+
+    // ==================== HELPERS ====================
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+    }
+    function escapeHtml(t) {
+      if (!t) return '';
+      const m = { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' };
+      return String(t).replace(/[&<>"']/g, c => m[c]);
+    }
+    function timeToMinutes(t) {
+      if (!t) return 0;
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    // Overlap: two flights overlap if one starts before the other ends.
+    // Handles midnight crossing (e.g., C-shift flights).
+    function flightsOverlap(f1, f2) {
+      let a1 = timeToMinutes(f1.arrival), d1 = timeToMinutes(f1.departure);
+      let a2 = timeToMinutes(f2.arrival), d2 = timeToMinutes(f2.departure);
+      // Handle midnight crossing
+      if (d1 < a1) d1 += 1440;
+      if (d2 < a2) d2 += 1440;
+      // Normalize: shift both by same amount if needed
+      // Simple interval overlap
+      return a1 < d2 && a2 < d1;
+    }
+
+    // ==================== INITIAL DATA ====================
+    function getInitialEmployees() {
+      const titles = [
+        'Check-in Agent', 'Check-in Agent', 'Check-in Agent', 'Check-in Agent', 'Check-in Agent',
+        'Baggage Handler', 'Baggage Handler', 'Baggage Handler', 'Baggage Handler',
+        'GSE Operator', 'GSE Operator', 'GSE Operator', 'GSE Operator',
+        'Aircraft Cleaner', 'Aircraft Cleaner', 'Aircraft Cleaner', 'Aircraft Cleaner',
+        'Shift Supervisor', 'Shift Supervisor', 'Shift Supervisor'
+      ];
+      const first = ['James','Maria','Robert','Linda','Michael','Sarah','David','Emma','John','Olivia',
+                    'Daniel','Sophia','Mark','Ava','Paul','Mia','Kevin','Grace','Brian','Chloe',
+                    'Liam','Zoe','Noah','Lily','Ethan','Hannah','Lucas','Aria','Mason','Ella',
+                    'Logan','Abigail','Elijah','Emily','Oliver','Madison','Aiden','Scarlett','Carter','Victoria',
+                    'Jack','Penelope','Henry','Layla','Sebastian','Nora','Miles','Camila','Owen','Aubrey',
+                    'Wyatt','Hazel','Leo','Violet','Julian','Aurora','Gabriel','Savannah','Isaac','Willow'];
+      const last = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Rodriguez','Martinez',
+                    'Hernandez','Lopez','Gonzalez','Wilson','Anderson','Thomas','Taylor','Moore','Jackson','Martin',
+                    'Lee','Perez','Thompson','White','Harris','Sanchez','Clark','Ramirez','Lewis','Robinson',
+                    'Walker','Young','Allen','King','Wright','Scott','Torres','Nguyen','Hill','Flores',
+                    'Green','Adams','Nelson','Baker','Hall','Rivera','Campbell','Mitchell','Carter','Roberts',
+                    'Gomez','Phillips','Evans','Turner','Diaz','Parker','Cruz','Edwards','Collins','Reyes'];
+
+      const out = [];
+      let idx = 0;
+      SHIFTS.forEach(shift => {
+        titles.forEach((title, ti) => {
+          let skills = JOB_TITLE_SKILLS[title] || ['general'];
+          if (title === 'Shift Supervisor') skills = ['supervisor', 'checkin', 'baggage', 'gse', 'cleaning'];
+          else {
+            skills = [...skills];
+            if (ti % 7 === 0) {
+              const extras = ['checkin', 'baggage', 'gse', 'cleaning'];
+              const extra = extras[(idx + ti) % extras.length];
+              if (!skills.includes(extra)) skills.push(extra);
+            }
+          }
+          out.push({
+            id: generateId(),
+            number: `EMP${String(idx + 1).padStart(3, '0')}`,
+            name: first[idx % first.length] + ' ' + last[idx % last.length],
+            shift: shift,
+            category: title,
+            skills: skills,
+            available: (idx % 9 !== 0)
+          });
+          idx++;
+        });
+      });
+      return out;
+    }
+
+    // FLIGHTS WITH SIMULTANEOUS ARRIVALS (the key feature of Stage 6)
+    // Example from user:
+    //   Flight 1: 08:30 -> 09:30 (Shift A)
+    //   Flight 2: 08:45 -> 09:45 (Shift A)  <-- overlaps with Flight 1
+    //   Flight 3: 10:00 -> 11:30 (Shift A)  <-- no overlap, staff free after 09:30/09:45
+    function getInitialFlights() {
+      return [
+        // Shift A — Simultaneous flights
+        { id: generateId(), number:'SK101', airline:'Sky Airlines', origin:'JFK', destination:'LAX', arrival:'08:30', departure:'09:30', shift:'A', requiredEmployees:2, requiredSkills:['checkin','boarding'], aircraftId:null, completed:false },
+        { id: generateId(), number:'BA202', airline:'British Airways', origin:'LHR', destination:'CDG', arrival:'08:45', departure:'09:45', shift:'A', requiredEmployees:2, requiredSkills:['arrivals','assistance'], aircraftId:null, completed:false },
+        { id: generateId(), number:'AF303', airline:'Air France', origin:'CDG', destination:'FRA', arrival:'10:00', departure:'11:30', shift:'A', requiredEmployees:2, requiredSkills:['ramp','baggage'], aircraftId:null, completed:false },
+        { id: generateId(), number:'LH404', airline:'Lufthansa', origin:'FRA', destination:'AMS', arrival:'12:00', departure:'13:30', shift:'A', requiredEmployees:2, requiredSkills:['docs','supervisor'], aircraftId:null, completed:false },
+        // Shift B — Simultaneous flights
+        { id: generateId(), number:'KL505', airline:'KLM', origin:'AMS', destination:'JFK', arrival:'14:15', departure:'15:45', shift:'B', requiredEmployees:2, requiredSkills:['checkin','boarding','assistance'], aircraftId:null, completed:false },
+        { id: generateId(), number:'EK606', airline:'Emirates', origin:'DXB', destination:'LHR', arrival:'14:30', departure:'16:00', shift:'B', requiredEmployees:2, requiredSkills:['checkin','baggage'], aircraftId:null, completed:false },
+        { id: generateId(), number:'QR707', airline:'Qatar Airways', origin:'DOH', destination:'CDG', arrival:'17:00', departure:'18:30', shift:'B', requiredEmployees:2, requiredSkills:['gse','cleaning'], aircraftId:null, completed:false },
+        // Shift C — Simultaneous flights (midnight crossing)
+        { id: generateId(), number:'SQ808', airline:'Singapore Airlines', origin:'SIN', destination:'FRA', arrival:'22:30', departure:'23:59', shift:'C', requiredEmployees:2, requiredSkills:['arrivals','baggage'], aircraftId:null, completed:false },
+        { id: generateId(), number:'TK909', airline:'Turkish Airlines', origin:'IST', destination:'AMS', arrival:'23:00', departure:'00:30', shift:'C', requiredEmployees:2, requiredSkills:['checkin','gse'], aircraftId:null, completed:false },
+        { id: generateId(), number:'CX101', airline:'Cathay Pacific', origin:'HKG', destination:'LHR', arrival:'01:30', departure:'03:00', shift:'C', requiredEmployees:2, requiredSkills:['cleaning','baggage'], aircraftId:null, completed:false }
+      ];
+    }
+
+    function getInitialAircraft() {
+      return [
+        { id: generateId(), reg: 'G-SKY1', type: 'A320' },
+        { id: generateId(), reg: 'G-BAW2', type: 'B737' },
+        { id: generateId(), reg: 'F-AFR3', type: 'A321' },
+        { id: generateId(), reg: 'A6-EK1', type: 'B777' }
+      ];
+    }
+
+    // ==================== STATE ====================
+    let employees = [];
+    let flights = [];
+    let aircraft = [];
+    let activityAllocs = {};     // flightId -> { activityKey: [empId] }
+    let completedFlights = {};   // flightId -> timestamp
+    let selectedFlightId = null;
+    let selectedShift = 'A';
+    let filterResponsibility = '';
+    let filterOnlyAvailable = false;
+
+    // ==================== LOAD / PERSIST ====================
+    function loadData() {
+      employees = safeParse(localStorage.getItem(EMPLOYEES_KEY), getInitialEmployees);
+      flights   = safeParse(localStorage.getItem(FLIGHTS_KEY),   getInitialFlights);
+      aircraft  = safeParse(localStorage.getItem(AIRCRAFT_KEY),  getInitialAircraft);
+      activityAllocs = safeParse(localStorage.getItem(ACTIVITY_ALLOC_KEY), () => ({}));
+      completedFlights = safeParse(localStorage.getItem(COMPLETED_KEY), () => ({}));
+
+      employees.forEach(e => {
+        if (!Array.isArray(e.skills)) e.skills = [];
+        if (!e.shift || !SHIFTS.includes(e.shift)) e.shift = 'A';
+      });
+      flights.forEach(f => {
+        if (!Array.isArray(f.requiredSkills)) f.requiredSkills = [];
+        if (f.aircraftId === undefined) f.aircraftId = null;
+        if (!f.shift || !SHIFTS.includes(f.shift)) f.shift = 'A';
+        f.completed = !!completedFlights[f.id];
+      });
+      aircraft.forEach(a => { if (!a.reg) a.reg = 'UNKNOWN'; });
+
+      const fIds = new Set(flights.map(f => f.id));
+      const eIds = new Set(employees.map(e => e.id));
+      Object.keys(activityAllocs).forEach(fid => {
+        if (!fIds.has(fid)) { delete activityAllocs[fid]; return; }
+        const acts = activityAllocs[fid];
+        Object.keys(acts).forEach(act => {
+          acts[act] = acts[act].filter(eid => eIds.has(eid));
+          if (!acts[act].length) delete acts[act];
+        });
+        if (!Object.keys(acts).length) delete activityAllocs[fid];
+      });
+      Object.keys(completedFlights).forEach(fid => {
+        if (!fIds.has(fid)) delete completedFlights[fid];
+      });
+
+      persist();
+      if (flights.length && !selectedFlightId) {
+        const firstA = flights.find(f => f.shift === 'A');
+        selectedFlightId = firstA ? firstA.id : flights[0].id;
+      }
+    }
+
+    function safeParse(raw, fallbackFn) {
+      if (!raw) return fallbackFn();
+      try { return JSON.parse(raw); } catch (e) { return fallbackFn(); }
+    }
+
+    function persist() {
+      localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
+      localStorage.setItem(FLIGHTS_KEY, JSON.stringify(flights));
+      localStorage.setItem(AIRCRAFT_KEY, JSON.stringify(aircraft));
+      localStorage.setItem(ACTIVITY_ALLOC_KEY, JSON.stringify(activityAllocs));
+      localStorage.setItem(COMPLETED_KEY, JSON.stringify(completedFlights));
+    }
+
+    // ==================== COMPLETION HELPERS ====================
+    function isFlightCompleted(flightId) { return !!completedFlights[flightId]; }
+
+    function getFlightActivityTotals(flightId) {
+      const flight = flights.find(f => f.id === flightId);
+      if (!flight) return { assigned: 0, required: 0 };
+      let assigned = 0;
+      ACTIVITIES.forEach(a => { assigned += getActivityAllocs(flightId, a.key).length; });
+      const required = (Number(flight.requiredEmployees) || 0) * ACTIVITIES.length;
+      return { assigned, required };
+    }
+
+    // ==================== ACTIVITY HELPERS ====================
+    function getActivityAllocs(flightId, actKey) {
+      if (!activityAllocs[flightId]) return [];
+      return activityAllocs[flightId][actKey] || [];
+    }
+    function isEmployeeOnFlight(flightId, empId) {
+      const acts = activityAllocs[flightId];
+      if (!acts) return false;
+      return Object.values(acts).some(list => list.includes(empId));
+    }
+    function findEmployeeActivity(flightId, empId) {
+      const acts = activityAllocs[flightId];
+      if (!acts) return null;
+      for (const key of Object.keys(acts)) {
+        if (acts[key].includes(empId)) return key;
+      }
+      return null;
+    }
+
+    // Get all flights an employee is currently assigned to (any activity)
+    function getEmployeeAssignedFlights(empId) {
+      const result = [];
+      Object.keys(activityAllocs).forEach(fid => {
+        const acts = activityAllocs[fid];
+        if (!acts) return;
+        for (const k of Object.keys(acts)) {
+          if (acts[k].includes(empId)) { result.push(fid); return; }
+        }
+      });
+      return result;
+    }
+
+    // Get overlapping flights for a given flight (same shift, time overlap)
+    function getOverlappingFlights(flightId) {
+      const target = flights.find(f => f.id === flightId);
+      if (!target) return [];
+      return flights.filter(f =>
+        f.id !== flightId &&
+        f.shift === target.shift &&
+        flightsOverlap(target, f)
+      );
+    }
+
+    // Check if an employee is busy on an overlapping flight
+    function isEmployeeBusyOnOverlap(empId, flightId) {
+      const overlapping = getOverlappingFlights(flightId);
+      for (const of of overlapping) {
+        if (isEmployeeOnFlight(of.id, empId)) return of;
+      }
+      return null;
+    }
+
+    // ==================== KEY ALLOCATION RULE ====================
+    function canAllocateActivity(empId, flightId, actKey) {
+      const emp = employees.find(e => e.id === empId);
+      if (!emp) return { ok:false, reason:'Employee not found.' };
+      if (!emp.available) return { ok:false, reason:'Employee is unavailable.' };
+      if (isFlightCompleted(flightId)) return { ok:false, reason:'Flight is completed and locked.' };
+
+      const targetFlight = flights.find(f => f.id === flightId);
+      if (!targetFlight) return { ok:false, reason:'Flight not found.' };
+
+      // *** SHIFT RULE ***
+      if (emp.shift !== targetFlight.shift) {
+        return { ok:false, reason:`Shift mismatch: Employee is in Shift ${emp.shift}, flight requires Shift ${targetFlight.shift}.` };
+      }
+
+      // Already on this flight?
+      if (isEmployeeOnFlight(flightId, empId)) {
+        const existingAct = findEmployeeActivity(flightId, empId);
+        if (existingAct === actKey) return { ok:false, reason:'Already allocated to this activity.' };
+        return { ok:false, reason:'Already allocated to another activity on this flight.' };
+      }
+
+      // *** OVERLAP RULE: Employee cannot be on an overlapping flight ***
+      const busyFlight = isEmployeeBusyOnOverlap(empId, flightId);
+      if (busyFlight) {
+        return { ok:false,
+          reason:`Employee is busy on overlapping flight ${busyFlight.number} (${busyFlight.arrival}–${busyFlight.departure}). Must complete work on that flight first.` };
+      }
+
+      return { ok:true };
+    }
+
+    // ==================== FILTER HELPERS ====================
+    function employeeMatchesFilter(emp) {
+      if (filterOnlyAvailable && !emp.available) return false;
+      if (filterResponsibility) {
+        const required = filterResponsibility.toLowerCase();
+        const has = emp.skills.some(s => s.toLowerCase() === required);
+        if (!has) return false;
+      }
+      return true;
+    }
+
+    // ==================== RENDERING ====================
+    function renderAll() {
+      renderShiftCounts();
+      renderPool();
+      renderFlightSelector();
+      renderCompletionBar();
+      renderSelectedFlightPanel();
+      renderSummaryStats();
+    }
+
+    function renderShiftCounts() {
+      SHIFTS.forEach(s => {
+        const count = employees.filter(e => e.shift === s).length;
+        const el = document.getElementById('shiftCount' + s);
+        if (el) el.textContent = count + ' staff';
+      });
+    }
+
+    function renderSummaryStats() {
+      document.getElementById('statFlights').textContent = flights.length;
+      document.getElementById('statAvailable').textContent = employees.filter(e => e.available).length;
+      let totalSlots = 0;
+      flights.forEach(f => { totalSlots += getFlightActivityTotals(f.id).assigned; });
+      document.getElementById('statAllocated').textContent = totalSlots;
+      document.getElementById('statCompleted').textContent = Object.keys(completedFlights).length;
+    }
+
+    function renderPool() {
+      const container = document.getElementById('employeePoolList');
+      const filterCountEl = document.getElementById('filterCount');
+      if (!employees.length) {
+        container.innerHTML = '<div class="empty-state">No employees. Click "Add".</div>';
+        filterCountEl.textContent = 'All';
+        return;
+      }
+
+      const shiftFiltered = employees.filter(e => e.shift === selectedShift);
+      const filtered = shiftFiltered.filter(employeeMatchesFilter);
+      filterCountEl.textContent = filtered.length + ' of ' + shiftFiltered.length;
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="empty-state">No employees match the filter in Shift ' + selectedShift + '.</div>';
+        return;
+      }
+
+      // Determine which flights are overlapping for the currently selected flight
+      const selectedFlight = flights.find(f => f.id === selectedFlightId);
+      const overlappingIds = selectedFlight ? new Set(getOverlappingFlights(selectedFlightId).map(f => f.id)) : new Set();
+
+      const sorted = [...filtered].sort((a, b) => {
+        if (a.available !== b.available) return a.available ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      let html = '';
+      sorted.forEach(emp => {
+        // Count total assignments
+        let actCount = 0;
+        Object.keys(activityAllocs).forEach(fid => {
+          Object.keys(activityAllocs[fid] || {}).forEach(k => {
+            if (activityAllocs[fid][k].includes(emp.id)) actCount++;
+          });
+        });
+
+        // Check if employee is busy on any overlapping flight for the selected flight
+        let busyFlight = null;
+        if (selectedFlight) {
+          busyFlight = isEmployeeBusyOnOverlap(emp.id, selectedFlightId);
+        }
+
+        const availClass = emp.available ? '' : 'unavailable';
+        const busyClass = busyFlight ? 'busy' : '';
+        const draggable = (emp.available && !busyFlight) ? 'draggable="true"' : '';
+        const matchedSkills = emp.skills.filter(s => s.toLowerCase() === filterResponsibility).length > 0;
+        const highlight = filterResponsibility && matchedSkills ? ' style="border-color:#2b9e6e;background:#eafaf2;"' : '';
+
+        let busyBadge = '';
+        if (busyFlight) {
+          busyBadge = `<span class="pool-badge busy-badge"><i class="bi bi-clock-history me-1"></i>On ${escapeHtml(busyFlight.number)}</span>`;
+        } else if (actCount > 0) {
+          busyBadge = `<span class="pool-badge"><i class="bi bi-check2-circle me-1"></i>${actCount}</span>`;
+        }
+
+        html += `<div class="pool-item ${availClass} ${busyClass}" data-emp-id="${emp.id}" ${draggable}${highlight} title="${busyFlight ? 'Busy on overlapping flight ' + escapeHtml(busyFlight.number) : ''}">
+          <div class="flex-grow-1">
+            <div class="emp-name">${escapeHtml(emp.name)} <span class="text-muted" style="font-size:0.68rem;">(${escapeHtml(emp.number)})</span></div>
+            <div class="emp-meta">
+              <span class="shift-badge shift-${emp.shift}">${emp.shift}</span>
+              ${escapeHtml(emp.category)}
+              ${busyBadge}
+            </div>
+          </div>
+          <span class="availability-dot ${emp.available ? 'dot-available' : 'dot-unavailable'}"></span>
+        </div>`;
+      });
+      container.innerHTML = html;
+      container.querySelectorAll('.pool-item[draggable="true"]').forEach(item => {
+        item.addEventListener('dragstart', onDragStart);
+        item.addEventListener('dragend', onDragEnd);
+      });
+    }
+
+    function renderFlightSelector() {
+      const sel = document.getElementById('flightSelector');
+      if (!flights.length) {
+        sel.innerHTML = '<span class="empty-state">No flights. Add a flight to begin.</span>';
+        return;
+      }
+      const sorted = [...flights].sort((a, b) => {
+        if (a.shift !== b.shift) return a.shift.localeCompare(b.shift);
+        return (a.arrival || '').localeCompare(b.arrival || '');
+      });
+      let html = '';
+      sorted.forEach(f => {
+        const active = f.id === selectedFlightId ? 'active' : '';
+        const completed = isFlightCompleted(f.id) ? 'completed' : '';
+        const overlap = getOverlappingFlights(f.id).length > 0 ? 'overlap-chip' : '';
+        const lockIcon = isFlightCompleted(f.id) ? '<i class="bi bi-lock-fill ms-1" style="font-size:0.6rem;"></i>' : '';
+        html += `<span class="flight-chip ${active} ${completed} ${overlap}" data-flight-id="${f.id}" title="${overlap ? 'This flight overlaps with another' : ''}">
+          <span class="shift-badge shift-${f.shift}" style="font-size:0.55rem;padding:0.1em 0.4em;">${f.shift}</span>
+          <i class="bi bi-airplane me-1"></i>${escapeHtml(f.number)}${lockIcon}
+        </span>`;
+      });
+      sel.innerHTML = html;
+      sel.querySelectorAll('.flight-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+          selectedFlightId = this.getAttribute('data-flight-id');
+          const f = flights.find(x => x.id === selectedFlightId);
+          if (f) selectedShift = f.shift;
+          renderAll();
+        });
+      });
+    }
+
+    function renderCompletionBar() {
+      const bar = document.getElementById('completionBar');
+      const flight = flights.find(f => f.id === selectedFlightId);
+      if (!flight) { bar.innerHTML = ''; return; }
+
+      if (isFlightCompleted(flight.id)) {
+        bar.innerHTML = `<div class="completion-banner locked-banner d-flex align-items-center justify-content-between flex-wrap gap-1">
+          <span><i class="bi bi-lock-fill lock-icon"></i>Flight <strong>${escapeHtml(flight.number)}</strong> is completed and locked.</span>
+          <button class="btn btn-outline-secondary btn-xs" id="reopenBtn">
+            <i class="bi bi-unlock"></i> Reopen
+          </button>
+        </div>`;
+        document.getElementById('reopenBtn').addEventListener('click', openReopenModal);
+        return;
+      }
+
+      const completedCount = Object.keys(completedFlights).length;
+      const totalFlights = flights.length;
+
+      bar.innerHTML = `<div class="completion-banner d-flex align-items-center justify-content-between flex-wrap gap-1">
+        <span><i class="bi bi-check2-circle lock-icon"></i>
+          <strong>${completedCount}/${totalFlights}</strong> flights completed.
+          ${completedCount < totalFlights ? 'Assign staff, then complete this flight.' : 'All flights completed!'}
+        </span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-success btn-xs" id="completeFlightBtn">
+            <i class="bi bi-check2-circle"></i> Complete &amp; Lock
+          </button>
+          <button class="btn btn-outline-secondary btn-xs" id="nextFlightBtn" ${completedCount >= totalFlights ? 'disabled' : ''}>
+            <i class="bi bi-arrow-right-circle"></i> Next flight
+          </button>
+        </div>
+      </div>`;
+
+      document.getElementById('completeFlightBtn').addEventListener('click', openCompleteModal);
+      document.getElementById('nextFlightBtn').addEventListener('click', goToNextFlight);
+    }
+
+    function renderSelectedFlightPanel() {
+      const panel = document.getElementById('selectedFlightPanel');
+      const flight = flights.find(f => f.id === selectedFlightId);
+      if (!flight) {
+        panel.innerHTML = '<div class="empty-state">Select a flight above to manage its shift activities.</div>';
+        return;
+      }
+
+      const completed = isFlightCompleted(flight.id);
+      const totals = getFlightActivityTotals(flight.id);
+      const totalAssigned = totals.assigned;
+      const totalRequired = totals.required;
+      const overlapping = getOverlappingFlights(flight.id);
+      const hasOverlap = overlapping.length > 0;
+
+      let statusClass, statusLabel, staffDot, badgeClass;
+      if (completed) {
+        statusClass = 'locked'; statusLabel = 'Completed'; staffDot = 'staff-grey'; badgeClass = 'grey';
+      } else if (hasOverlap && totalAssigned < totalRequired) {
+        statusClass = 'overlap'; statusLabel = 'Overlap + Understaffed'; staffDot = 'staff-orange'; badgeClass = 'orange';
+      } else if (totalAssigned < totalRequired) {
+        statusClass = 'understaffed'; statusLabel = 'Understaffed'; staffDot = 'staff-red'; badgeClass = 'red';
+      } else if (totalAssigned > totalRequired) {
+        statusClass = 'overstaffed'; statusLabel = 'Overstaffed'; staffDot = 'staff-amber'; badgeClass = 'amber';
+      } else {
+        statusClass = 'adequate'; statusLabel = 'Adequately staffed'; staffDot = 'staff-green'; badgeClass = 'green';
+      }
+
+      // Aircraft chips
+      const currentAircraftId = flight.aircraftId;
+      let aircraftChips = '';
+      if (aircraft.length === 0) {
+        aircraftChips = '<span class="mini-legend">No aircraft registered.</span>';
+      } else {
+        aircraft.forEach(ac => {
+          const active = ac.id === currentAircraftId ? 'active' : '';
+          const lockedClass = completed ? 'locked-chip' : '';
+          aircraftChips += `<span class="aircraft-chip ${active} ${lockedClass}" data-aircraft-id="${ac.id}">
+            <i class="bi bi-airplane-engines"></i><span class="reg">${escapeHtml(ac.reg)}</span> <span style="opacity:0.75;">${escapeHtml(ac.type)}</span>
+          </span>`;
+        });
+      }
+
+      // Overlap warning
+      let overlapWarning = '';
+      if (hasOverlap && !completed) {
+        const otherNums = overlapping.map(f => `<strong>${escapeHtml(f.number)}</strong> (${escapeHtml(f.arrival)}–${escapeHtml(f.departure)})`).join(', ');
+        overlapWarning = `<div class="overlap-warning">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          <strong>Simultaneous flight overlap:</strong> This flight overlaps with ${otherNums}.
+          Employees working on the overlapping flight cannot be assigned here until their current shift work is complete.
+        </div>`;
+      }
+
+      // Shift warning
+      const shiftWarning = completed ? '' :
+        `<div class="shift-warning"><i class="bi bi-shield-lock me-1"></i>
+          This flight is assigned to <strong>Shift ${flight.shift}</strong>.
+          Only employees in Shift ${flight.shift} can be allocated.
+        </div>`;
+
+      // Activities
+      let activityHtml = '';
+      ACTIVITIES.forEach(act => {
+        const list = getActivityAllocs(flight.id, act.key);
+        const req = Number(flight.requiredEmployees) || 0;
+        const count = list.length;
+        let dotClass, countClass = '';
+        if (completed) { dotClass = 'dot-grey'; }
+        else if (count >= req) { dotClass = 'dot-green'; }
+        else if (count > 0) { dotClass = 'dot-amber'; countClass = 'activity-unmet'; }
+        else { dotClass = 'dot-red'; countClass = 'activity-unmet'; }
+
+        let chips = '';
+        list.forEach(eid => {
+          const emp = employees.find(e => e.id === eid);
+          if (!emp) return;
+          const removeBtn = completed ? '' : `<span class="remove-alloc" data-emp-id="${emp.id}" data-flight-id="${flight.id}" data-act-key="${act.key}" title="Remove">×</span>`;
+          chips += `<span class="allocated-item ${completed ? 'locked-chip' : ''}">
+            <span class="shift-badge shift-${emp.shift}" style="font-size:0.5rem;padding:0.05em 0.35em;margin-right:3px;">${emp.shift}</span>
+            ${escapeHtml(emp.name)}${removeBtn}
+          </span>`;
+        });
+        if (!chips) chips = '<span class="text-muted fst-italic" style="font-size:0.68rem;">' + (completed ? 'No staff' : 'Drop Shift ' + flight.shift + ' staff here') + '</span>';
+
+        const lockedClass = completed ? 'locked-block' : '';
+        const dragEnabled = completed ? '' : 'data-droppable="true"';
+        activityHtml += `<div class="activity-block ${lockedClass}" data-flight-id="${flight.id}" data-act-key="${act.key}" data-flight-shift="${flight.shift}" ${dragEnabled}>
+          <div class="activity-header">
+            <span class="act-name"><i class="bi ${act.icon}"></i> ${act.label}</span>
+            <span><span class="activity-dot ${dotClass}"></span><span class="${countClass}">${count}/${req}</span></span>
+          </div>
+          <div class="allocated-container">${chips}</div>
+        </div>`;
+      });
+
+      panel.innerHTML = `<div class="flight-card ${statusClass}">
+        <div class="flight-card-header">
+          <div>
+            <span class="shift-badge shift-${flight.shift}" style="margin-right:4px;">SHIFT ${flight.shift}</span>
+            <span class="flight-title">${escapeHtml(flight.number)}</span>
+            <span class="flight-sub ms-1">${escapeHtml(flight.airline)} · ${escapeHtml(flight.origin)} → ${escapeHtml(flight.destination)}</span>
+            <span class="flight-sub ms-1"><i class="bi bi-clock"></i> ${escapeHtml(flight.arrival)}–${escapeHtml(flight.departure)}</span>
+            ${hasOverlap ? '<span class="badge bg-warning text-dark ms-1" style="font-size:0.62rem;"><i class="bi bi-exclamation-triangle me-1"></i>Overlap</span>' : ''}
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <span class="staff-badge ${badgeClass}">
+              <span class="staff-indicator ${staffDot}"></span>${totalAssigned}/${totalRequired} ${statusLabel}
+            </span>
+            ${completed ? '' : `
+              <button class="btn btn-outline-primary btn-xs edit-flight" data-id="${flight.id}" title="Edit flight"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-outline-danger btn-xs remove-flight" data-id="${flight.id}" title="Delete flight"><i class="bi bi-trash"></i></button>
+            `}
+          </div>
+        </div>
+        <div class="flight-card-body">
+          <div class="mb-2">
+            <span class="mini-legend fw-semibold me-1"><i class="bi bi-airplane-engines"></i> Assigned aircraft:</span>
+            <div class="d-inline-flex flex-wrap gap-1 align-items-center">${aircraftChips}</div>
+          </div>
+          <div class="mb-1">
+            <span class="mini-legend"><i class="bi bi-people me-1"></i>Staff required per activity:</span>
+            <input type="number" class="form-control form-control-sm req-edit-input" value="${Number(flight.requiredEmployees) || 0}" min="1" data-flight-id="${flight.id}" ${completed ? 'disabled' : ''}>
+          </div>
+          ${overlapWarning}
+          ${shiftWarning}
+          <div class="mt-2">${activityHtml}</div>
+        </div>
+      </div>`;
+
+      // Wire events
+      if (!completed) {
+        panel.querySelectorAll('.remove-alloc').forEach(el => {
+          el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            removeActivityAllocation(this.getAttribute('data-flight-id'), this.getAttribute('data-act-key'), this.getAttribute('data-emp-id'));
+            renderAll();
+          });
+        });
+        panel.querySelectorAll('.activity-block[data-droppable="true"]').forEach(block => {
+          block.addEventListener('dragover', onDragOver);
+          block.addEventListener('dragleave', onDragLeave);
+          block.addEventListener('drop', onDropActivity);
+        });
+        panel.querySelectorAll('.edit-flight').forEach(btn => btn.addEventListener('click', onEditFlight));
+        panel.querySelectorAll('.remove-flight').forEach(btn => btn.addEventListener('click', onRemoveFlight));
+        panel.querySelectorAll('.req-edit-input').forEach(input => {
+          input.addEventListener('change', function() {
+            const fid = this.getAttribute('data-flight-id');
+            let val = parseInt(this.value, 10);
+            if (isNaN(val) || val < 1) val = 1;
+            const f = flights.find(x => x.id === fid);
+            if (f) { f.requiredEmployees = val; persist(); renderAll(); }
+          });
+        });
+      }
+
+      panel.querySelectorAll('.aircraft-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+          if (completed) return;
+          const acId = this.getAttribute('data-aircraft-id');
+          const f = flights.find(x => x.id === selectedFlightId);
+          if (f) {
+            f.aircraftId = (f.aircraftId === acId) ? null : acId;
+            persist();
+            renderAll();
+          }
+        });
+      });
+    }
+
+    // ==================== DRAG & DROP ====================
+    let draggedEmpId = null;
+
+    function onDragStart(e) {
+      draggedEmpId = this.getAttribute('data-emp-id');
+      this.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', draggedEmpId);
+      e.dataTransfer.effectAllowed = 'move';
+    }
+    function onDragEnd() {
+      this.classList.remove('dragging');
+      draggedEmpId = null;
+      document.querySelectorAll('.activity-block.drag-over').forEach(el => el.classList.remove('drag-over'));
+    }
+    function onDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this.classList.add('drag-over');
+    }
+    function onDragLeave() {
+      this.classList.remove('drag-over');
+    }
+    function onDropActivity(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      const flightId = this.getAttribute('data-flight-id');
+      const actKey = this.getAttribute('data-act-key');
+      const empId = e.dataTransfer.getData('text/plain') || draggedEmpId;
+      if (!empId || !flightId || !actKey) return;
+
+      const result = canAllocateActivity(empId, flightId, actKey);
+      if (!result.ok) { alert(result.reason); return; }
+      if (!activityAllocs[flightId]) activityAllocs[flightId] = {};
+      if (!activityAllocs[flightId][actKey]) activityAllocs[flightId][actKey] = [];
+      activityAllocs[flightId][actKey].push(empId);
+      persist();
+      renderAll();
+    }
+
+    function removeActivityAllocation(flightId, actKey, empId) {
+      if (isFlightCompleted(flightId)) return;
+      if (activityAllocs[flightId] && activityAllocs[flightId][actKey]) {
+        activityAllocs[flightId][actKey] = activityAllocs[flightId][actKey].filter(id => id !== empId);
+        if (!activityAllocs[flightId][actKey].length) delete activityAllocs[flightId][actKey];
+        if (!Object.keys(activityAllocs[flightId]).length) delete activityAllocs[flightId];
+        persist();
+      }
+    }
+
+    // ==================== COMPLETION WORKFLOW ====================
+    function openCompleteModal() {
+      const flight = flights.find(f => f.id === selectedFlightId);
+      if (!flight || isFlightCompleted(flight.id)) return;
+
+      document.getElementById('completeFlightNumber').textContent = flight.number;
+
+      const totals = getFlightActivityTotals(flight.id);
+      const warnings = [];
+      if (totals.assigned < totals.required) {
+        warnings.push(`<div class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Understaffed: ${totals.assigned} of ${totals.required} slots filled.</div>`);
+      }
+      ACTIVITIES.forEach(act => {
+        const list = getActivityAllocs(flight.id, act.key);
+        const req = Number(flight.requiredEmployees) || 0;
+        if (list.length < req) {
+          warnings.push(`<div class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>${act.label}: ${list.length}/${req} allocated.</div>`);
+        }
+      });
+      if (!flight.aircraftId) {
+        warnings.push('<div class="text-warning"><i class="bi bi-airplane me-1"></i>No aircraft assigned to this flight.</div>');
+      }
+      const overlapping = getOverlappingFlights(flight.id);
+      if (overlapping.length > 0) {
+        warnings.push(`<div class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Flight overlaps with: ${overlapping.map(f => f.number).join(', ')}.</div>`);
+      }
+
+      document.getElementById('completeWarnings').innerHTML = warnings.length ? warnings.join('') : '<div class="text-success"><i class="bi bi-check-circle me-1"></i>All activities adequately staffed.</div>';
+
+      new bootstrap.Modal(document.getElementById('completeModal')).show();
+    }
+
+    function confirmCompleteFlight() {
+      const flight = flights.find(f => f.id === selectedFlightId);
+      if (!flight) return;
+      completedFlights[flight.id] = new Date().toISOString();
+      flight.completed = true;
+      persist();
+      bootstrap.Modal.getInstance(document.getElementById('completeModal')).hide();
+      renderAll();
+    }
+
+    function openReopenModal() {
+      const flight = flights.find(f => f.id === selectedFlightId);
+      if (!flight) return;
+      document.getElementById('reopenFlightNumber').textContent = flight.number;
+      new bootstrap.Modal(document.getElementById('reopenModal')).show();
+    }
+
+    function confirmReopenFlight() {
+      const flight = flights.find(f => f.id === selectedFlightId);
+      if (!flight) return;
+      delete completedFlights[flight.id];
+      flight.completed = false;
+      persist();
+      bootstrap.Modal.getInstance(document.getElementById('reopenModal')).hide();
+      renderAll();
+    }
+
+    function goToNextFlight() {
+      const sorted = [...flights].sort((a, b) => {
+        if (a.shift !== b.shift) return a.shift.localeCompare(b.shift);
+        return (a.arrival || '').localeCompare(b.arrival || '');
+      });
+      const currentIdx = sorted.findIndex(f => f.id === selectedFlightId);
+      if (currentIdx === -1) return;
+      let target = null;
+      for (let i = 1; i <= sorted.length; i++) {
+        const candidate = sorted[(currentIdx + i) % sorted.length];
+        if (!isFlightCompleted(candidate.id)) { target = candidate; break; }
+      }
+      if (target) {
+        selectedFlightId = target.id;
+        selectedShift = target.shift;
+        renderAll();
+      } else {
+        alert('All flights are completed.');
+      }
+    }
+
+    // ==================== EMPLOYEE CRUD ====================
+    function onAddEmployee() {
+      document.getElementById('employeeModalTitle').textContent = 'Add employee';
+      document.getElementById('employeeForm').reset();
+      document.getElementById('employeeId').value = '';
+      document.getElementById('empAvailable').checked = true;
+      document.getElementById('empShift').value = selectedShift;
+      document.getElementById('empNumber').value = 'EMP' + String(employees.length + 1).padStart(3, '0');
+      new bootstrap.Modal(document.getElementById('employeeModal')).show();
+    }
+
+    function onEditEmployee(e) {
+      const id = e.currentTarget.getAttribute('data-id');
+      const emp = employees.find(x => x.id === id);
+      if (!emp) return;
+      document.getElementById('employeeModalTitle').textContent = 'Edit employee';
+      document.getElementById('employeeId').value = emp.id;
+      document.getElementById('empNumber').value = emp.number;
+      document.getElementById('empName').value = emp.name;
+      document.getElementById('empShift').value = emp.shift;
+      document.getElementById('empCategory').value = emp.category;
+      document.getElementById('empSkills').value = emp.skills.join(', ');
+      document.getElementById('empAvailable').checked = emp.available;
+      new bootstrap.Modal(document.getElementById('employeeModal')).show();
+    }
+
+    function saveEmployee() {
+      const id = document.getElementById('employeeId').value;
+      const number = document.getElementById('empNumber').value.trim();
+      const name = document.getElementById('empName').value.trim();
+      const shift = document.getElementById('empShift').value;
+      const category = document.getElementById('empCategory').value;
+      const skillsRaw = document.getElementById('empSkills').value;
+      const available = document.getElementById('empAvailable').checked;
+
+      if (!number || !name || !category || !shift) { alert('Please fill in employee number, name, job title, and shift.'); return; }
+      const skills = skillsRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+      if (id) {
+        const idx = employees.findIndex(x => x.id === id);
+        if (idx !== -1) employees[idx] = { ...employees[idx], number, name, shift, category, skills, available };
+      } else {
+        employees.push({ id: generateId(), number, name, shift, category, skills, available });
+      }
+      persist();
+      renderAll();
+      bootstrap.Modal.getInstance(document.getElementById('employeeModal')).hide();
+    }
+
+    // ==================== FLIGHT CRUD ====================
+    function onAddFlight() {
+      document.getElementById('flightModalTitle').textContent = 'Add flight';
+      document.getElementById('flightForm').reset();
+      document.getElementById('flightId').value = '';
+      document.getElementById('flightRequiredEmployees').value = 2;
+      document.getElementById('flightShift').value = selectedShift;
+      document.getElementById('flightArrival').value = '08:00';
+      document.getElementById('flightDeparture').value = '09:30';
+      new bootstrap.Modal(document.getElementById('flightModal')).show();
+    }
+
+    function onEditFlight(e) {
+      const id = e.currentTarget.getAttribute('data-id');
+      if (isFlightCompleted(id)) { alert('Cannot edit a completed flight.'); return; }
+      const f = flights.find(x => x.id === id);
+      if (!f) return;
+      document.getElementById('flightModalTitle').textContent = 'Edit flight';
+      document.getElementById('flightId').value = f.id;
+      document.getElementById('flightNumber').value = f.number;
+      document.getElementById('flightAirline').value = f.airline;
+      document.getElementById('flightOrigin').value = f.origin;
+      document.getElementById('flightDestination').value = f.destination;
+      document.getElementById('flightArrival').value = f.arrival;
+      document.getElementById('flightDeparture').value = f.departure;
+      document.getElementById('flightShift').value = f.shift;
+      document.getElementById('flightRequiredEmployees').value = f.requiredEmployees;
+      document.getElementById('flightRequiredSkills').value = f.requiredSkills.join(', ');
+      new bootstrap.Modal(document.getElementById('flightModal')).show();
+    }
+
+    function onRemoveFlight(e) {
+      const id = e.currentTarget.getAttribute('data-id');
+      if (isFlightCompleted(id)) { alert('Cannot delete a completed flight.'); return; }
+      if (!confirm('Delete this flight? All allocations will be removed.')) return;
+      flights = flights.filter(f => f.id !== id);
+      delete activityAllocs[id];
+      delete completedFlights[id];
+      if (selectedFlightId === id) selectedFlightId = flights.length ? flights[0].id : null;
+      persist();
+      renderAll();
+    }
+
+    function saveFlight() {
+      const id = document.getElementById('flightId').value;
+      const number = document.getElementById('flightNumber').value.trim();
+      const airline = document.getElementById('flightAirline').value.trim();
+      const origin = document.getElementById('flightOrigin').value.trim();
+      const destination = document.getElementById('flightDestination').value.trim();
+      const arrival = document.getElementById('flightArrival').value;
+      const departure = document.getElementById('flightDeparture').value;
+      const shift = document.getElementById('flightShift').value;
+      const requiredEmployees = parseInt(document.getElementById('flightRequiredEmployees').value, 10);
+      const skillsRaw = document.getElementById('flightRequiredSkills').value;
+
+      if (!number || !airline || !origin || !destination || !arrival || !departure || !shift || isNaN(requiredEmployees)) {
+        alert('Please fill in all flight fields.'); return;
+      }
+      if (requiredEmployees < 1) { alert('Required employees must be at least 1.'); return; }
+      const requiredSkills = skillsRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+      if (id) {
+        if (isFlightCompleted(id)) { alert('Cannot edit a completed flight.'); return; }
+        const idx = flights.findIndex(x => x.id === id);
+        if (idx !== -1) {
+          flights[idx] = { ...flights[idx], number, airline, origin, destination, arrival, departure, shift, requiredEmployees, requiredSkills };
+        }
+      } else {
+        const newF = { id: generateId(), number, airline, origin, destination, arrival, departure, shift, requiredEmployees, requiredSkills, aircraftId: null, completed: false };
+        flights.push(newF);
+        if (!selectedFlightId) selectedFlightId = newF.id;
+      }
+      persist();
+      renderAll();
+      bootstrap.Modal.getInstance(document.getElementById('flightModal')).hide();
+    }
+
+    // ==================== AIRCRAFT CRUD ====================
+    function onAddAircraft() {
+      document.getElementById('aircraftModalTitle').textContent = 'Add aircraft';
+      document.getElementById('aircraftForm').reset();
+      document.getElementById('aircraftId').value = '';
+      new bootstrap.Modal(document.getElementById('aircraftModal')).show();
+    }
+
+    function saveAircraft() {
+      const id = document.getElementById('aircraftId').value;
+      const reg = document.getElementById('aircraftReg').value.trim().toUpperCase();
+      const type = document.getElementById('aircraftType').value.trim();
+      if (!reg || !type) { alert('Please fill in registration and type.'); return; }
+
+      if (id) {
+        const idx = aircraft.findIndex(a => a.id === id);
+        if (idx !== -1) aircraft[idx] = { ...aircraft[idx], reg, type };
+      } else {
+        aircraft.push({ id: generateId(), reg, type });
+      }
+      persist();
+      renderAll();
+      bootstrap.Modal.getInstance(document.getElementById('aircraftModal')).hide();
+    }
+
+    // ==================== MANUAL ALLOCATION ====================
+    function openManualAllocModal() {
+      const flightSel = document.getElementById('manualFlightSelect');
+      const actSel = document.getElementById('manualActivitySelect');
+      const empSel = document.getElementById('manualEmployeeSelect');
+      document.getElementById('manualAllocError').textContent = '';
+
+      flightSel.innerHTML = '<option value="">Select flight</option>';
+      [...flights].sort((a,b)=>(a.arrival||'').localeCompare(b.arrival||'')).forEach(f => {
+        if (!isFlightCompleted(f.id)) {
+          flightSel.innerHTML += `<option value="${f.id}">[${f.shift}] ${escapeHtml(f.number)} (${escapeHtml(f.arrival)}–${escapeHtml(f.departure)})</option>`;
+        }
+      });
+
+      actSel.innerHTML = ACTIVITIES.map(a => `<option value="${a.key}">${escapeHtml(a.label)}</option>`).join('');
+
+      empSel.innerHTML = '<option value="">Select flight first</option>';
+
+      flightSel.onchange = function() {
+        const fid = this.value;
+        const flight = flights.find(f => f.id === fid);
+        empSel.innerHTML = '<option value="">Select employee</option>';
+        if (!flight) return;
+        // Only show employees who are available, same shift, and NOT busy on an overlapping flight
+        employees.filter(e => e.available && e.shift === flight.shift).forEach(e => {
+          const busy = isEmployeeBusyOnOverlap(e.id, fid);
+          const busySuffix = busy ? ` [BUSY: ${busy.number}]` : '';
+          const disabled = busy ? ' disabled' : '';
+          empSel.innerHTML += `<option value="${e.id}"${disabled}>[${e.shift}] ${escapeHtml(e.name)} (${escapeHtml(e.number)})${busySuffix}</option>`;
+        });
+      };
+
+      new bootstrap.Modal(document.getElementById('manualAllocModal')).show();
+    }
+
+    function confirmManualAlloc() {
+      const flightId = document.getElementById('manualFlightSelect').value;
+      const actKey = document.getElementById('manualActivitySelect').value;
+      const empId = document.getElementById('manualEmployeeSelect').value;
+      const errEl = document.getElementById('manualAllocError');
+
+      if (!flightId || !empId || !actKey) { errEl.textContent = 'Please select flight, activity, and employee.'; return; }
+      if (isFlightCompleted(flightId)) { errEl.textContent = 'Flight is completed and locked.'; return; }
+      const result = canAllocateActivity(empId, flightId, actKey);
+      if (!result.ok) { errEl.textContent = result.reason; return; }
+
+      if (!activityAllocs[flightId]) activityAllocs[flightId] = {};
+      if (!activityAllocs[flightId][actKey]) activityAllocs[flightId][actKey] = [];
+      activityAllocs[flightId][actKey].push(empId);
+      persist();
+      renderAll();
+      bootstrap.Modal.getInstance(document.getElementById('manualAllocModal')).hide();
+    }
+
+    // ==================== SHIFT TABS ====================
+    function setupShiftTabs() {
+      document.querySelectorAll('.shift-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          document.querySelectorAll('.shift-tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          selectedShift = this.getAttribute('data-shift');
+          renderPool();
+        });
+      });
+    }
+
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', function() {
+      loadData();
+      renderAll();
+      setupShiftTabs();
+
+      const f = flights.find(x => x.id === selectedFlightId);
+      if (f) {
+        selectedShift = f.shift;
+        document.querySelectorAll('.shift-tab').forEach(t => {
+          t.classList.toggle('active', t.getAttribute('data-shift') === selectedShift);
+        });
+      }
+
+      document.getElementById('addEmployeeBtn').addEventListener('click', onAddEmployee);
+      document.getElementById('addFlightBtn').addEventListener('click', onAddFlight);
+      document.getElementById('addAircraftBtn').addEventListener('click', onAddAircraft);
+      document.getElementById('saveEmployeeBtn').addEventListener('click', saveEmployee);
+      document.getElementById('saveFlightBtn').addEventListener('click', saveFlight);
+      document.getElementById('saveAircraftBtn').addEventListener('click', saveAircraft);
+      document.getElementById('manualAllocBtn').addEventListener('click', openManualAllocModal);
+      document.getElementById('manualAllocConfirm').addEventListener('click', confirmManualAlloc);
+      document.getElementById('confirmCompleteBtn').addEventListener('click', confirmCompleteFlight);
+      document.getElementById('confirmReopenBtn').addEventListener('click', confirmReopenFlight);
+
+      document.getElementById('empCategory').addEventListener('change', function() {
+        const title = this.value;
+        const skills = JOB_TITLE_SKILLS[title];
+        if (skills && !document.getElementById('empSkills').value.trim()) {
+          document.getElementById('empSkills').value = skills.join(', ');
+        }
+      });
+
+      document.getElementById('responsibilityFilter').addEventListener('change', function() {
+        filterResponsibility = this.value;
+        renderPool();
+      });
+      document.getElementById('onlyAvailableBtn').addEventListener('click', function() {
+        filterOnlyAvailable = !filterOnlyAvailable;
+        this.classList.toggle('active', filterOnlyAvailable);
+        this.style.background = filterOnlyAvailable ? '#d4f2e3' : '';
+        this.style.borderColor = filterOnlyAvailable ? '#2b9e6e' : '';
+        this.style.color = filterOnlyAvailable ? '#1e7a4e' : '';
+        renderPool();
+      });
+      document.getElementById('clearFilterBtn').addEventListener('click', function() {
+        filterResponsibility = '';
+        filterOnlyAvailable = false;
+        document.getElementById('responsibilityFilter').value = '';
+        const availBtn = document.getElementById('onlyAvailableBtn');
+        availBtn.classList.remove('active');
+        availBtn.style.background = '';
+        availBtn.style.borderColor = '';
+        availBtn.style.color = '';
+        renderPool();
+      });
+
+      document.getElementById('employeePoolList').addEventListener('dblclick', function(e) {
+        const item = e.target.closest('.pool-item');
+        if (!item) return;
+        const empId = item.getAttribute('data-emp-id');
+        const emp = employees.find(x => x.id === empId);
+        if (!emp) return;
+        document.getElementById('employeeModalTitle').textContent = 'Edit employee';
+        document.getElementById('employeeId').value = emp.id;
+        document.getElementById('empNumber').value = emp.number;
+        document.getElementById('empName').value = emp.name;
+        document.getElementById('empShift').value = emp.shift;
+        document.getElementById('empCategory').value = emp.category;
+        document.getElementById('empSkills').value = emp.skills.join(', ');
+        document.getElementById('empAvailable').checked = emp.available;
+        new bootstrap.Modal(document.getElementById('employeeModal')).show();
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
