@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-sfu__rb5v&kc0ccqj5fpg$toy6fdvj7g!7l32=_k0tk#x#bfuo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['smartops.pythonanywhere.com']
 
 
 # Application definition
@@ -117,6 +117,16 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Static files configuration
+
+STATIC_URL = '/static/'
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'login'
@@ -125,7 +135,3 @@ LOGOUT_REDIRECT_URL = 'login'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
